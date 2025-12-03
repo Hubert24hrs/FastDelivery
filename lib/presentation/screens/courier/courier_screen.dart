@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fast_delivery/core/models/courier_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 
+import 'package:fast_delivery/presentation/screens/courier/package_details_sheet.dart';
+import 'package:fast_delivery/presentation/screens/courier/propose_price_sheet.dart';
 import 'package:fast_delivery/presentation/screens/courier/route_entry_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -103,6 +105,24 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => const RouteEntrySheet(),
+    );
+  }
+
+  void _openPackageDetails() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const PackageDetailsSheet(),
+    );
+  }
+
+  void _openProposePrice() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const ProposePriceSheet(),
     );
   }
 
@@ -229,11 +249,19 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
                   const SizedBox(height: 16),
                   
                   // Order Details
-                  _buildListTile('Package details', Icons.tune),
+                  _buildListTile(
+                    'Package details', 
+                    Icons.tune, 
+                    onTap: _openPackageDetails,
+                  ),
                   const SizedBox(height: 8),
                   
                   // Offer your fare
-                  _buildListTile('Propose your price', Icons.money),
+                  _buildListTile(
+                    'Propose your price', 
+                    Icons.money,
+                    onTap: _openProposePrice,
+                  ),
                   
                   const SizedBox(height: 24),
                   
@@ -302,28 +330,31 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
     );
   }
 
-  Widget _buildListTile(String title, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.black87, size: 20),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.black87,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+  Widget _buildListTile(String title, IconData icon, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.black87, size: 20),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-          ),
-          const Spacer(),
-          const Icon(Icons.chevron_right, color: Colors.black54),
-        ],
+            const Spacer(),
+            const Icon(Icons.chevron_right, color: Colors.black54),
+          ],
+        ),
       ),
     );
   }

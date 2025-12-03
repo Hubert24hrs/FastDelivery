@@ -1,5 +1,5 @@
 import 'package:fast_delivery/core/providers/providers.dart';
-import 'package:fast_delivery/core/theme/app_theme.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,52 +24,51 @@ class AppDrawer extends ConsumerWidget {
             future: userAsync,
             builder: (context, snapshot) {
               final name = snapshot.data?.displayName ?? 'Hubert';
-              final rating = 4.8; // Mock rating as it's not in UserModel
               
-              return Container(
-                padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-                decoration: const BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.black12)),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: AppTheme.primaryColor,
-                      child: Text(
-                        name[0].toUpperCase(),
-                        style: const TextStyle(fontSize: 24, color: Colors.white),
+              return InkWell(
+                onTap: () {
+                  context.pop(); // Close drawer
+                  context.push('/profile');
+                },
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+                  decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Colors.black12)),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.grey[200],
+                        child: const Icon(Icons.person, size: 30, color: Colors.grey),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.star, color: Colors.amber, size: 16),
-                              const SizedBox(width: 4),
-                              Text(
-                                '$rating (0)',
-                                style: const TextStyle(color: Colors.black54),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
                               ),
-                            ],
-                          ),
-                        ],
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'My account',
+                              style: TextStyle(
+                                color: Color(0xFF4CAF50), // Green
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const Icon(Icons.chevron_right, color: Colors.black54),
-                  ],
+                      const Icon(Icons.chevron_right, color: Colors.black54),
+                    ],
+                  ),
                 ),
               );
             },
@@ -84,117 +83,138 @@ class AppDrawer extends ConsumerWidget {
                   context, 
                   icon: FontAwesomeIcons.wallet, 
                   title: 'Payment', 
-                  subtitle: 'Manage payment methods & balance',
                   onTap: () {
                     context.pop();
                     context.push('/wallet');
                   },
                 ),
-                _buildMenuItem(context, icon: FontAwesomeIcons.car, title: 'City', onTap: () => context.pop()),
+                _buildMenuItem(
+                  context, 
+                  icon: FontAwesomeIcons.tag, 
+                  title: 'Promotions', 
+                  subtitle: 'Enter promo code',
+                  isNew: true,
+                  onTap: () {},
+                ),
                 _buildMenuItem(
                   context, 
                   icon: FontAwesomeIcons.clockRotateLeft, 
-                  title: 'Request history', 
-                  subtitle: 'View your past trips and deliveries',
-                  onTap: () {},
-                ),
-                _buildMenuItem(context, icon: FontAwesomeIcons.box, title: 'Couriers', onTap: () {
-                  context.pop();
-                  context.push('/courier');
-                }),
-                
-                _buildMenuItem(
-                  context, 
-                  icon: FontAwesomeIcons.bell, 
-                  title: 'Notifications', 
-                  subtitle: 'Trip updates, promos & alerts',
+                  title: 'My Rides', 
                   onTap: () {},
                 ),
                 _buildMenuItem(
                   context, 
                   icon: FontAwesomeIcons.shieldHalved, 
                   title: 'Safety', 
-                  subtitle: 'Emergency contacts & ride sharing',
                   onTap: () {},
                 ),
                 _buildMenuItem(
                   context, 
-                  icon: FontAwesomeIcons.gear, 
-                  title: 'Settings', 
-                  onTap: () {
-                    context.pop();
-                    context.push('/settings');
-                  }
+                  icon: FontAwesomeIcons.briefcase, 
+                  title: 'Expense Your Rides', 
+                  onTap: () {},
                 ),
-                _buildMenuItem(context, icon: FontAwesomeIcons.circleInfo, title: 'Help', onTap: () {}),
+                _buildMenuItem(
+                  context, 
+                  icon: FontAwesomeIcons.circleQuestion, 
+                  title: 'Support', 
+                  onTap: () {},
+                ),
+                _buildMenuItem(
+                  context, 
+                  icon: FontAwesomeIcons.circleInfo, 
+                  title: 'About', 
+                  onTap: () {},
+                ),
               ],
             ),
           ),
 
-          // Driver Mode Button
+          // Become a driver Banner
           Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      context.pop();
-                      context.push('/driver-selection');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFCCFF00), // Neon Lime
-                      foregroundColor: Colors.black,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+            padding: const EdgeInsets.all(16.0),
+            child: InkWell(
+              onTap: () {
+                context.pop();
+                context.push('/driver-selection');
+              },
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9), // Light green
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Become a driver',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Earn money on your schedule',
+                            style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Text(
-                          'Driver mode',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          'Earn money driving or delivering',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.normal),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Social Icons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildSocialIcon(FontAwesomeIcons.facebook),
-                    const SizedBox(width: 24),
-                    _buildSocialIcon(FontAwesomeIcons.instagram),
+                    const Icon(Icons.close, size: 16, color: Colors.grey),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, {required IconData icon, required String title, String? subtitle, required VoidCallback onTap}) {
+  Widget _buildMenuItem(BuildContext context, {
+    required IconData icon, 
+    required String title, 
+    String? subtitle, 
+    bool isNew = false,
+    required VoidCallback onTap
+  }) {
     return ListTile(
       leading: Icon(icon, color: Colors.black54, size: 20),
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.black87,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
+      title: Row(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          if (isNew) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text(
+                'NEW',
+                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ],
       ),
       subtitle: subtitle != null ? Text(
         subtitle,
@@ -208,17 +228,6 @@ class AppDrawer extends ConsumerWidget {
         onTap();
       },
       contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-    );
-  }
-
-  Widget _buildSocialIcon(IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.blue, // Placeholder color, image shows blue/gradient
-      ),
-      child: Icon(icon, color: Colors.white, size: 20),
     );
   }
 }

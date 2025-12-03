@@ -1,4 +1,4 @@
-import 'package:fast_delivery/core/theme/app_theme.dart';
+
 import 'package:fast_delivery/presentation/common/app_drawer.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:fast_delivery/presentation/screens/home/service_selector.dart';
@@ -61,13 +61,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: const Icon(Icons.menu, color: Colors.black),
                           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                         ),
-                      ),
-                      
-                      // Profile Avatar
-                      const CircleAvatar(
-                        radius: 24,
-                        backgroundColor: AppTheme.primaryColor,
-                        child: Icon(Icons.person, color: Colors.black),
                       ),
                     ],
                   ).animate().fadeIn().slideX(),
