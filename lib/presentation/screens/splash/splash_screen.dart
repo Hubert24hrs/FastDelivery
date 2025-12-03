@@ -37,7 +37,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.5),
+                    color: AppTheme.primaryColor.withValues(alpha: 0.5),
                     blurRadius: 50,
                     spreadRadius: 10,
                   ),
@@ -48,7 +48,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 fit: BoxFit.contain,
               )
                   .animate(onPlay: (controller) => controller.repeat())
-                  .shimmer(duration: 2.seconds, color: Colors.white.withOpacity(0.5))
+                  .shimmer(duration: 2.seconds, color: Colors.white.withValues(alpha: 0.5))
                   .scale(
                     begin: const Offset(0.9, 0.9),
                     end: const Offset(1.1, 1.1),

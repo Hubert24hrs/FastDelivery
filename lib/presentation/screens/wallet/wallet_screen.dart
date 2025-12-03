@@ -1,6 +1,5 @@
 import 'package:fast_delivery/core/providers/providers.dart';
-import 'package:fast_delivery/core/theme/app_theme.dart';
-import 'package:fast_delivery/presentation/common/glass_card.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -107,7 +106,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.2),
+                      color: Colors.green.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(FontAwesomeIcons.moneyBill, color: Colors.green, size: 20),
@@ -123,7 +122,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                     value: _isCashEnabled,
                     onChanged: (val) => setState(() => _isCashEnabled = val),
                     activeColor: Colors.green,
-                    activeTrackColor: Colors.green.withOpacity(0.3),
+                    activeTrackColor: Colors.green.withValues(alpha: 0.3),
                   ),
                 ],
               ),

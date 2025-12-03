@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:geolocator/geolocator.dart';
+
 import 'package:go_router/go_router.dart';
 
 class BookingSheet extends ConsumerStatefulWidget {
@@ -26,7 +26,7 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
   final List<Map<String, dynamic>> _rideOptions = [
     {'name': 'Standard', 'price': 1200.0, 'time': '5 min', 'icon': FontAwesomeIcons.car},
     {'name': 'Premium', 'price': 2500.0, 'time': '8 min', 'icon': FontAwesomeIcons.carSide},
-    {'name': 'Van', 'price': 4000.0, 'time': '15 min', 'icon': FontAwesomeIcons.shuttleVan},
+    {'name': 'Van', 'price': 4000.0, 'time': '15 min', 'icon': FontAwesomeIcons.vanShuttle},
   ];
 
   Future<void> _bookRide() async {
@@ -43,6 +43,7 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
     try {
       // 1. Get Current Location
       final position = await ref.read(locationServiceProvider).determinePosition();
+      if (!mounted) return;
 
       // 2. Process Payment
       final userEmail = ref.read(authServiceProvider).currentUser?.email ?? 'user@example.com';
@@ -102,7 +103,7 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor.withOpacity(0.9),
+          color: AppTheme.surfaceColor.withValues(alpha: 0.9),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
         ),
         child: Column(
@@ -170,7 +171,7 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
                       width: 100,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppTheme.primaryColor.withOpacity(0.2) : Colors.transparent,
+                        color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.2) : Colors.transparent,
                         border: Border.all(
                           color: isSelected ? AppTheme.primaryColor : Colors.white10,
                           width: 2,
@@ -219,7 +220,7 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
                   backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.black,
                   elevation: 10,
-                  shadowColor: AppTheme.primaryColor.withOpacity(0.5),
+                  shadowColor: AppTheme.primaryColor.withValues(alpha: 0.5),
                 ),
                 child: _isLoading 
                   ? const CircularProgressIndicator(color: Colors.black)
@@ -249,7 +250,7 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   )

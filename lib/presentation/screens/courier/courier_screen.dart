@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fast_delivery/core/models/courier_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
-import 'package:fast_delivery/core/theme/app_theme.dart';
-import 'package:fast_delivery/presentation/common/glass_card.dart';
+
+import 'package:fast_delivery/presentation/screens/courier/route_entry_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -34,6 +34,7 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
     try {
       // 1. Get Current Location (Mocking Pickup for now if empty)
       final position = await ref.read(locationServiceProvider).determinePosition();
+      if (!mounted) return;
 
       // 2. Process Payment
       final userEmail = ref.read(authServiceProvider).currentUser?.email ?? 'user@example.com';
@@ -96,93 +97,145 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
     }
   }
 
+  void _openRouteEntry() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const RouteEntrySheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white, // Changed base to white as per reference
       body: Stack(
         children: [
-          // Background Gradient (Different variant for Courier)
+          // Map Background Placeholder (Simulating the map behind)
           Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF0A0E21), Color(0xFF330033)], // Purple tint
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
+            color: Colors.grey[200],
+            child: const Center(
+              child: Text('Map View Placeholder', style: TextStyle(color: Colors.grey)),
             ),
           ),
           
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
+          // Back Button
+          Positioned(
+            top: 50,
+            left: 20,
+            child: CircleAvatar(
+              backgroundColor: Colors.white,
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                onPressed: () => context.go('/'),
+              ),
+            ),
+          ),
+
+          // Main Content Sheet
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 10,
+                    offset: Offset(0, -5),
+                  ),
+                ],
+              ),
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
+                  const Text(
+                    'Courier delivery',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Vehicle Selection
                   Row(
                     children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor,
-                          shape: BoxShape.circle,
-                          boxShadow: [AppTheme.neonShadow],
+                      _buildVehicleOption('Car', Icons.directions_car),
+                      const SizedBox(width: 12),
+                      _buildVehicleOption('Motorcycle', Icons.two_wheeler),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Current Location Display
+                  Row(
+                    children: [
+                      const Icon(Icons.my_location, color: Colors.green, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Prince Samuel Adedoyin St 2', // Mock current location
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                        child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
-                          onPressed: () => context.go('/'),
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Text(
-                        'Courier Service',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
                       ),
                     ],
                   ),
-                  
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 16),
 
-                  // Package Details Form
-                  GlassCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
+                  // To Input with Add Stops
+                  GestureDetector(
+                    onTap: _openRouteEntry,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
                         children: [
-                          TextFormField(
-                            controller: _pickupController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: const InputDecoration(
-                              labelText: 'Pickup Location',
-                              prefixIcon: Icon(Icons.location_on, color: AppTheme.primaryColor),
+                          const Icon(Icons.search, color: Colors.black54),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'To',
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontSize: 16,
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          TextFormField(
-                            controller: _dropoffController,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: const InputDecoration(
-                              labelText: 'Drop-off Location',
-                              prefixIcon: Icon(Icons.flag, color: AppTheme.secondaryColor),
+                          const Spacer(),
+                          const Text(
+                            'Add stops',
+                            style: TextStyle(
+                              color: Colors.black54,
+                              fontSize: 14,
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          // Vehicle Type Selector
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
-                            children: [
-                              _buildSizeOption('Motorcycle', Icons.two_wheeler),
-                              _buildSizeOption('Car', Icons.directions_car),
-                            ],
-                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.add, color: Colors.black54, size: 20),
                         ],
                       ),
                     ),
                   ),
                   
-                  const Spacer(),
+                  const SizedBox(height: 16),
+                  
+                  // Order Details
+                  _buildListTile('Package details', Icons.tune),
+                  const SizedBox(height: 8),
+                  
+                  // Offer your fare
+                  _buildListTile('Propose your price', Icons.money),
+                  
+                  const SizedBox(height: 24),
                   
                   // Action Button
                   SizedBox(
@@ -190,9 +243,23 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _requestCourier,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFCCFF00), // Lime green
+                        foregroundColor: Colors.black,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                       child: _isLoading 
                         ? const CircularProgressIndicator(color: Colors.black) 
-                        : const Text('Find Courier'),
+                        : const Text(
+                            'Find a courier',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                     ),
                   ),
                 ],
@@ -204,29 +271,58 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
     );
   }
 
-  Widget _buildSizeOption(String label, IconData icon) {
+  Widget _buildVehicleOption(String label, IconData icon) {
     final isSelected = _selectedSize == label;
     return GestureDetector(
       onTap: () => setState(() => _selectedSize = label),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isSelected ? AppTheme.primaryColor : AppTheme.surfaceColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white24),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFEEFFCC) : Colors.grey[100],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon, 
+              size: 18,
+              color: Colors.black,
             ),
-            child: Icon(icon, color: isSelected ? Colors.black : Colors.white),
-          ),
-          const SizedBox(height: 8),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListTile(String title, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.black87, size: 20),
+          const SizedBox(width: 12),
           Text(
-            label, 
-            style: TextStyle(
-              color: isSelected ? AppTheme.primaryColor : Colors.white70,
-              fontWeight: FontWeight.bold,
-            )
+            title,
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
           ),
+          const Spacer(),
+          const Icon(Icons.chevron_right, color: Colors.black54),
         ],
       ),
     );

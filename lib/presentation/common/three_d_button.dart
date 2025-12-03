@@ -39,13 +39,13 @@ class _ThreeDButtonState extends State<ThreeDButton> {
               ? [] // No shadow when pressed (flat against surface)
               : [
                   BoxShadow(
-                    color: widget.color.withOpacity(0.6),
+                    color: widget.color.withValues(alpha: 0.6),
                     offset: const Offset(0, 10), // Deep shadow for 3D effect
                     blurRadius: 0, // Sharp shadow for "blocky" 3D look or soft for neon?
                     // Let's go with a mix: a solid block shadow + a glow
                   ),
                   BoxShadow(
-                    color: widget.color.withOpacity(0.4),
+                    color: widget.color.withValues(alpha: 0.4),
                     offset: const Offset(0, 15),
                     blurRadius: 20, // Glow
                   ),

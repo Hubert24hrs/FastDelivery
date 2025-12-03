@@ -22,7 +22,7 @@ class ServiceSelector extends StatelessWidget {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, -5),
           ),
@@ -75,20 +75,20 @@ class ServiceSelector extends StatelessWidget {
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.4),
+                        color: AppTheme.primaryColor.withValues(alpha: 0.4),
                         blurRadius: 20,
                         offset: const Offset(0, 15),
                         spreadRadius: -5,
                       ),
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 10,
                         offset: const Offset(0, 5),
                       ),
                     ]
                   : [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 5,
                         offset: const Offset(0, 2),
                       ),
@@ -113,7 +113,7 @@ class ServiceSelector extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.6),
+                          Colors.black.withValues(alpha: 0.6),
                         ],
                         stops: const [0.6, 1.0],
                       ),

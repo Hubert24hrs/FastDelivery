@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:fast_delivery/core/models/courier_model.dart';
 import 'package:fast_delivery/core/models/ride_model.dart';
 import 'package:fast_delivery/core/services/auth_service.dart';

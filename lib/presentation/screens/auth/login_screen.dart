@@ -29,8 +29,8 @@ class LoginScreen extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.3),
-                    AppTheme.backgroundColor.withOpacity(0.8),
+                    Colors.black.withValues(alpha: 0.3),
+                    AppTheme.backgroundColor.withValues(alpha: 0.8),
                   ],
                 ),
               ),
@@ -152,8 +152,8 @@ class _SocialButton extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withOpacity(0.1),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          color: Colors.white.withValues(alpha: 0.1),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         ),
         child: Icon(icon, color: Colors.white, size: 24),
       ),

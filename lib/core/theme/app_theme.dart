@@ -17,12 +17,12 @@ class AppTheme {
       primary: primaryColor,
       secondary: secondaryColor,
       surface: surfaceColor,
-      background: backgroundColor,
+
       error: errorColor,
       onPrimary: Colors.black,
       onSecondary: Colors.white,
       onSurface: Colors.white,
-      onBackground: Colors.white,
+
     ),
     textTheme: GoogleFonts.outfitTextTheme(
       ThemeData.dark().textTheme,
@@ -35,7 +35,7 @@ class AppTheme {
         backgroundColor: primaryColor,
         foregroundColor: Colors.black,
         elevation: 10,
-        shadowColor: primaryColor.withOpacity(0.5),
+        shadowColor: primaryColor.withValues(alpha: 0.5),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -54,7 +54,7 @@ class AppTheme {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
