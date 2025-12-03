@@ -15,6 +15,9 @@ class CourierModel {
   final String status; // 'pending', 'accepted', 'picked_up', 'delivered', 'cancelled'
   final DateTime createdAt;
 
+  final List<String> stops;
+  final List<GeoPoint> stopLocations;
+
   CourierModel({
     required this.id,
     required this.userId,
@@ -29,6 +32,8 @@ class CourierModel {
     required this.price,
     this.status = 'pending',
     required this.createdAt,
+    this.stops = const [],
+    this.stopLocations = const [],
   });
 
   factory CourierModel.fromMap(Map<String, dynamic> data, String id) {
@@ -46,6 +51,8 @@ class CourierModel {
       price: (data['price'] ?? 0.0).toDouble(),
       status: data['status'] ?? 'pending',
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+      stops: List<String>.from(data['stops'] ?? []),
+      stopLocations: List<GeoPoint>.from(data['stopLocations'] ?? []),
     );
   }
 
@@ -63,6 +70,8 @@ class CourierModel {
       'price': price,
       'status': status,
       'createdAt': Timestamp.fromDate(createdAt),
+      'stops': stops,
+      'stopLocations': stopLocations,
     };
   }
 }

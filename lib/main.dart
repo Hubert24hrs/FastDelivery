@@ -1,15 +1,21 @@
 import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/screens/auth/login_screen.dart';
+import 'package:fast_delivery/presentation/screens/courier/courier_screen.dart';
 import 'package:fast_delivery/presentation/screens/driver/driver_dashboard_screen.dart';
 import 'package:fast_delivery/presentation/screens/driver/driver_mode_selection_screen.dart';
+import 'package:fast_delivery/presentation/screens/driver/driver_pending_screen.dart';
 import 'package:fast_delivery/presentation/screens/driver/driver_registration_screen.dart';
 import 'package:fast_delivery/presentation/screens/home/home_screen.dart';
 import 'package:fast_delivery/presentation/screens/map/map_screen.dart';
-import 'package:fast_delivery/presentation/screens/courier/courier_screen.dart';
-import 'package:fast_delivery/presentation/screens/splash/splash_screen.dart';
-import 'package:fast_delivery/presentation/screens/auth/login_screen.dart';
 import 'package:fast_delivery/presentation/screens/profile/profile_screen.dart';
 import 'package:fast_delivery/presentation/screens/settings/settings_screen.dart';
+import 'package:fast_delivery/presentation/screens/splash/splash_screen.dart';
+import 'package:fast_delivery/presentation/screens/wallet/add_card_screen.dart';
+import 'package:fast_delivery/presentation/screens/wallet/transaction_history_screen.dart';
 import 'package:fast_delivery/presentation/screens/wallet/wallet_screen.dart';
+import 'package:fast_delivery/presentation/screens/tracking/tracking_screen.dart';
+import 'package:fast_delivery/presentation/screens/booking/destination_search_screen.dart';
+import 'package:fast_delivery/presentation/screens/driver/driver_navigation_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,6 +69,16 @@ final _router = GoRouter(
     GoRoute(
       path: '/wallet',
       builder: (context, state) => const WalletScreen(),
+      routes: [
+        GoRoute(
+          path: 'add-card',
+          builder: (context, state) => const AddCardScreen(),
+        ),
+        GoRoute(
+          path: 'transactions',
+          builder: (context, state) => const TransactionHistoryScreen(),
+        ),
+      ],
     ),
     GoRoute(
       path: '/settings',
@@ -80,8 +96,37 @@ final _router = GoRouter(
       },
     ),
     GoRoute(
+      path: '/driver-pending',
+      builder: (context, state) => const DriverPendingScreen(),
+    ),
+    GoRoute(
       path: '/driver',
       builder: (context, state) => const DriverDashboardScreen(),
+    ),
+    GoRoute(
+      path: '/tracking',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return TrackingScreen(
+          destinationName: extra?['destinationName'],
+          destinationLocation: extra?['destinationLocation'],
+          rideId: extra?['rideId'],
+        );
+      },
+    ),
+    GoRoute(
+      path: '/destination-search',
+      builder: (context, state) => const DestinationSearchScreen(),
+    ),
+    GoRoute(
+      path: '/driver-navigation',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>?;
+        return DriverNavigationScreen(
+          ride: extra?['ride'],
+          courier: extra?['courier'],
+        );
+      },
     ),
   ],
 );

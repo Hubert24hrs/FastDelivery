@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class WalletScreen extends ConsumerStatefulWidget {
   const WalletScreen({super.key});
@@ -25,8 +26,9 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
       backgroundColor: Colors.white, // Matching reference light theme or keep dark? Reference is light. Let's try to adapt to dark or stick to reference. User said "features seen in the first reference image". I'll use a light theme for this screen to match reference closely, or maybe a dark version of it. Let's stick to the AppTheme (Dark) but layout of reference.
       // Actually, the app is dark mode. A stark white screen might look out of place. I will use the AppTheme background but the LAYOUT of the reference.
       appBar: AppBar(
-        title: const Text('Payment'),
+        title: const Text('Payment', style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.transparent,
+        iconTheme: const IconThemeData(color: Colors.black),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/'), // Back to Home since it's from Drawer
@@ -59,7 +61,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                       final balance = snapshot.data?.walletBalance ?? 0.0;
                       return Text(
                         '₦${balance.toStringAsFixed(0)}',
-                        style: const TextStyle(
+                        style: GoogleFonts.roboto(
                           fontSize: 32, 
                           fontWeight: FontWeight.bold, 
                           color: Colors.white
@@ -81,9 +83,19 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
             const SizedBox(height: 24),
             
             // Help Links
-            _buildLinkItem(Icons.help_outline, 'What is Fast Delivery balance?'),
+            _buildLinkItem(
+              context,
+              Icons.help_outline, 
+              'What is Fast Delivery balance?',
+              () {},
+            ),
             const SizedBox(height: 16),
-            _buildLinkItem(Icons.history, 'See Fast Delivery balance transactions'),
+            _buildLinkItem(
+              context,
+              Icons.history, 
+              'See Fast Delivery balance transactions',
+              () => context.go('/wallet/transactions'),
+            ),
             
             const SizedBox(height: 40),
             
@@ -93,7 +105,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Colors.black,
               ),
             ),
             const SizedBox(height: 24),
@@ -106,7 +118,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.2),
+                      color: Colors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(FontAwesomeIcons.moneyBill, color: Colors.green, size: 20),
@@ -115,7 +127,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                   const Expanded(
                     child: Text(
                       'Cash',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      style: TextStyle(color: Colors.black, fontSize: 16),
                     ),
                   ),
                   Switch(
@@ -132,18 +144,16 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
             
             // Add Card Option
             InkWell(
-              onTap: () {
-                // TODO: Implement Add Card
-              },
+              onTap: () => context.go('/wallet/add-card'),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Row(
                   children: [
-                    const Icon(Icons.add, color: Colors.white, size: 24),
+                    const Icon(Icons.add, color: Colors.black, size: 24),
                     const SizedBox(width: 16),
                     const Text(
                       'Add debit/credit card',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
+                      style: TextStyle(color: Colors.black, fontSize: 16),
                     ),
                   ],
                 ),
@@ -157,11 +167,11 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               onTap: () {},
               child: Row(
                 children: [
-                  const Icon(Icons.work_outline, color: Colors.white54),
+                  const Icon(Icons.work_outline, color: Colors.black54),
                   const SizedBox(width: 16),
                   const Text(
                     'Set up work profile',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(color: Colors.black, fontSize: 16),
                   ),
                 ],
               ),
@@ -172,16 +182,21 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     );
   }
 
-  Widget _buildLinkItem(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.white54, size: 20),
-        const SizedBox(width: 16),
-        Text(
-          text,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
-        ),
-      ],
+  Widget _buildLinkItem(BuildContext context, IconData icon, String text, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.black54, size: 20),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(color: Colors.black, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

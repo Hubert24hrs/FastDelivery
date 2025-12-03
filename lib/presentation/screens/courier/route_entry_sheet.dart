@@ -64,7 +64,7 @@ class _RouteEntrySheetState extends State<RouteEntrySheet> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Prince Samuel Adedoyin St 2', // Mock current location
+                          'Current Location',
                           style: TextStyle(
                             color: Colors.grey[800],
                             fontWeight: FontWeight.w500,

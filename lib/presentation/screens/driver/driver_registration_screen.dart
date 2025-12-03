@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 class DriverRegistrationScreen extends StatefulWidget {
   final String type; // 'driver' or 'courier'
@@ -14,6 +17,13 @@ class DriverRegistrationScreen extends StatefulWidget {
 class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  final ImagePicker _picker = ImagePicker();
+
+  // Document Files
+  File? _licenseImage;
+  File? _registrationImage;
+  File? _insuranceImage;
+  File? _permitImage;
 
   @override
   Widget build(BuildContext context) {
@@ -65,14 +75,14 @@ class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
               ),
               const SizedBox(height: 16),
               
-              _buildUploadButton('Driver\'s License'),
+              _buildUploadButton('Driver\'s License', _licenseImage, (file) => setState(() => _licenseImage = file)),
               const SizedBox(height: 12),
-              _buildUploadButton('Vehicle Registration'),
+              _buildUploadButton('Vehicle Registration', _registrationImage, (file) => setState(() => _registrationImage = file)),
               const SizedBox(height: 12),
-              _buildUploadButton('Insurance Certificate'),
+              _buildUploadButton('Insurance Certificate', _insuranceImage, (file) => setState(() => _insuranceImage = file)),
               if (!isDriver) ...[
                 const SizedBox(height: 12),
-                _buildUploadButton('Courier Permit'),
+                _buildUploadButton('Courier Permit', _permitImage, (file) => setState(() => _permitImage = file)),
               ],
 
               const SizedBox(height: 40),
@@ -112,35 +122,83 @@ class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
     );
   }
 
-  Widget _buildUploadButton(String label) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white10,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white24, style: BorderStyle.solid),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.upload_file, color: AppTheme.primaryColor),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(color: Colors.white),
+  Widget _buildUploadButton(String label, File? imageFile, Function(File) onImageSelected) {
+    final isSelected = imageFile != null;
+
+    return InkWell(
+      onTap: () => _pickImage(onImageSelected),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.1) : Colors.white10,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppTheme.primaryColor : Colors.white24, 
+            style: BorderStyle.solid
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? Icons.check_circle : Icons.upload_file, 
+              color: isSelected ? AppTheme.primaryColor : Colors.white54
             ),
-          ),
-          const Text(
-            'Upload',
-            style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
-          ),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                  if (isSelected)
+                    Text(
+                      'File selected',
+                      style: TextStyle(color: AppTheme.primaryColor.withValues(alpha: 0.8), fontSize: 12),
+                    ),
+                ],
+              ),
+            ),
+            Text(
+              isSelected ? 'Change' : 'Upload',
+              style: TextStyle(
+                color: isSelected ? AppTheme.primaryColor : Colors.white70, 
+                fontWeight: FontWeight.bold
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  Future<void> _pickImage(Function(File) onImageSelected) async {
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        onImageSelected(File(image.path));
+      }
+    } catch (e) {
+      debugPrint('Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to pick image')),
+        );
+      }
+    }
+  }
+
   void _submitForm() async {
     if (_formKey.currentState!.validate()) {
+      // Validate Documents
+      if (_licenseImage == null || _registrationImage == null || _insuranceImage == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please upload all required documents')),
+        );
+        return;
+      }
+
       setState(() => _isLoading = true);
       
       // Simulate API call
@@ -148,10 +206,7 @@ class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
       
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Application Submitted! We will review it shortly.')),
-        );
-        context.pop(); // Go back to selection
+        context.go('/driver-pending');
       }
     }
   }

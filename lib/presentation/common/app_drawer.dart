@@ -85,7 +85,7 @@ class AppDrawer extends ConsumerWidget {
                   title: 'Payment', 
                   onTap: () {
                     context.pop();
-                    context.push('/wallet');
+                    context.go('/wallet');
                   },
                 ),
                 _buildMenuItem(
@@ -119,6 +119,15 @@ class AppDrawer extends ConsumerWidget {
                   icon: FontAwesomeIcons.circleQuestion, 
                   title: 'Support', 
                   onTap: () {},
+                ),
+                _buildMenuItem(
+                  context, 
+                  icon: FontAwesomeIcons.gear, 
+                  title: 'Settings', 
+                  onTap: () {
+                    context.pop();
+                    context.go('/settings');
+                  },
                 ),
                 _buildMenuItem(
                   context, 

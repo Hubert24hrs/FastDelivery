@@ -12,6 +12,9 @@ class RideModel {
   final String status; // 'pending', 'accepted', 'ongoing', 'completed', 'cancelled'
   final DateTime createdAt;
 
+  final List<String> stops;
+  final List<GeoPoint> stopLocations;
+
   RideModel({
     required this.id,
     required this.userId,
@@ -23,6 +26,8 @@ class RideModel {
     required this.price,
     this.status = 'pending',
     required this.createdAt,
+    this.stops = const [],
+    this.stopLocations = const [],
   });
 
   factory RideModel.fromMap(Map<String, dynamic> data, String id) {
@@ -37,6 +42,8 @@ class RideModel {
       price: (data['price'] ?? 0.0).toDouble(),
       status: data['status'] ?? 'pending',
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+      stops: List<String>.from(data['stops'] ?? []),
+      stopLocations: List<GeoPoint>.from(data['stopLocations'] ?? []),
     );
   }
 
@@ -51,6 +58,8 @@ class RideModel {
       'price': price,
       'status': status,
       'createdAt': Timestamp.fromDate(createdAt),
+      'stops': stops,
+      'stopLocations': stopLocations,
     };
   }
 }
