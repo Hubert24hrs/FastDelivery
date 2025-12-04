@@ -3,6 +3,7 @@ import 'package:fast_delivery/core/models/courier_model.dart';
 import 'package:fast_delivery/core/models/ride_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/common/app_drawer.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -19,6 +20,8 @@ class DriverDashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  
   // Mock Data for Couriers (Still mock for now as we focused on Rides)
   final List<CourierModel> _mockCouriers = [
     CourierModel(
@@ -38,11 +41,43 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
     ),
   ];
 
+  bool _isAccepting = false;
+
+
+
+  @override
+  void initState() {
+    super.initState();
+    _checkActiveRide();
+  }
+
+  Future<void> _checkActiveRide() async {
+    // Small delay to ensure providers are ready
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    final driverId = ref.read(authServiceProvider).currentUser?.uid ?? 'driver_1';
+    final ride = await ref.read(rideServiceProvider).getActiveRideForDriver(driverId);
+    
+    if (ride != null && mounted) {
+      debugPrint('DriverDashboard: Active ride found (${ride.id}). Resuming navigation.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Resuming active ride...'),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      context.push('/driver-navigation', extra: {'ride': ride});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isOnline = ref.watch(driverOnlineProvider);
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: const AppDrawer(),
       backgroundColor: Colors.black, // Dark background for dashboard
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -51,7 +86,7 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () => Scaffold.of(context).openDrawer(),
+          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
       ),
       body: Column(
@@ -326,13 +361,15 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () => _acceptRide(ride),
+                      onPressed: _isAccepting ? null : () => _acceptRide(ride),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: const Text('ACCEPT'),
+                      child: _isAccepting 
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Text('ACCEPT'),
                     ),
                   ),
                 ],
@@ -436,19 +473,35 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
   }
 
   Future<void> _acceptRide(RideModel ride) async {
+    if (_isAccepting) return;
+    setState(() => _isAccepting = true);
+
     try {
       final driverId = ref.read(authServiceProvider).currentUser?.uid ?? 'driver_1';
-      debugPrint('DriverDashboard: Ride accepted. Navigating to /driver-navigation');
-      if (mounted) {
-        context.push('/driver-navigation', extra: {'ride': ride});
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ride Accepted!')));
-      }
+      
+      await ref.read(rideServiceProvider).updateRideStatus(
+        ride.id, 
+        'accepted', 
+        driverId: driverId,
+        driverName: 'John Doe',
+        driverPhone: '08012345678',
+        driverPhoto: 'https://i.pravatar.cc/150?img=11',
+        carModel: 'Toyota Camry (Silver)',
+        plateNumber: 'LND-823-XA',
+      );
 
-      await ref.read(rideServiceProvider).updateRideStatus(ride.id, 'accepted', driverId: driverId);
+      debugPrint('DriverDashboard: Ride accepted. Navigating to /driver-navigation');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ride Accepted!')));
+        context.push('/driver-navigation', extra: {'ride': ride});
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error accepting ride: $e')));
       }
+    } finally {
+      if (mounted) setState(() => _isAccepting = false);
     }
   }
 

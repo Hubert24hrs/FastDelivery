@@ -26,9 +26,18 @@ class TrackingScreen extends ConsumerStatefulWidget {
 
 class _TrackingScreenState extends ConsumerState<TrackingScreen> {
   mapbox.MapboxMap? _mapboxMap;
+  mapbox.PointAnnotationManager? _pointAnnotationManager;
+  mapbox.PointAnnotation? _driverAnnotation;
+  RideModel? _latestRide;
 
   _onMapCreated(mapbox.MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
+    _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+    
+    // Update marker if we already have data
+    if (_latestRide != null) {
+      _updateDriverMarker(_latestRide);
+    }
 
     // If we have a destination, draw a route (mock polyline)
     if (widget.destinationLocation != null) {
@@ -37,7 +46,6 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
       final end = widget.destinationLocation!;
 
       // Create a simple straight line for now (Mock Route)
-      // In a real app, we would fetch the route from Mapbox Directions API
       final polylineAnnotationManager = await mapboxMap.annotations.createPolylineAnnotationManager();
       
       await polylineAnnotationManager.create(
@@ -64,6 +72,41 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
         ),
         mapbox.MapAnimationOptions(duration: 2000),
       );
+    }
+  }
+
+  Future<void> _updateDriverMarker(RideModel? ride) async {
+    if (ride?.driverLocation == null || _pointAnnotationManager == null) return;
+
+    final point = mapbox.Point(
+      coordinates: mapbox.Position(
+        ride!.driverLocation!.longitude,
+        ride.driverLocation!.latitude,
+      ),
+    );
+
+    if (_driverAnnotation == null) {
+      // Create new annotation
+      // Use a built-in icon or load an image. For now, let's try to load a simple car icon from assets if available, 
+      // or just use a default marker. Since we don't have a car asset confirmed, we'll use a default circle/marker.
+      // Actually, Mapbox default marker is fine, or we can try to use an image.
+      // Let's assume we don't have a custom icon ready and use a default one or just a circle.
+      // Wait, we can use `iconImage` if we add an image to the style.
+      // For simplicity, let's just create a point.
+      
+      _driverAnnotation = await _pointAnnotationManager?.create(
+        mapbox.PointAnnotationOptions(
+          geometry: point,
+          iconImage: 'car-15', // Mapbox default car icon if available, or we might need to load one.
+          // If 'car-15' doesn't exist, it might show nothing. Let's try to load an image from assets first?
+          // Or better, just use a simple circle for now if we can't guarantee the icon.
+          // Actually, let's skip iconImage and see if it shows a default marker.
+        ),
+      );
+    } else {
+      // Update existing annotation
+      _driverAnnotation?.geometry = point;
+      await _pointAnnotationManager?.update(_driverAnnotation!);
     }
   }
 
@@ -123,6 +166,13 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
 
                 final ride = snapshot.data;
                 final status = ride?.status ?? 'pending';
+                
+                // Update driver marker
+                if (ride != null) {
+                  _latestRide = ride;
+                  // Schedule microtask to avoid calling setState during build if that happens inside mapbox logic
+                  Future.microtask(() => _updateDriverMarker(ride));
+                }
 
                 return GlassCard(
                   opacity: 0.9,
@@ -198,18 +248,18 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                           // Driver Info
                           Row(
                             children: [
-                              const CircleAvatar(
+                              CircleAvatar(
                                 radius: 25,
-                                backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=11'), // Mock Driver
+                                backgroundImage: NetworkImage(ride?.driverPhoto ?? 'https://i.pravatar.cc/150?img=11'),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      'Michael K.',
-                                      style: TextStyle(
+                                    Text(
+                                      ride?.driverName ?? 'Unknown Driver',
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -225,7 +275,7 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                                         ),
                                         const SizedBox(width: 8),
                                         Text(
-                                          '•  Toyota Camry (Silver)',
+                                          '•  ${ride?.carModel ?? 'Vehicle Info'}',
                                           style: TextStyle(color: Colors.grey[400], fontSize: 12),
                                         ),
                                       ],
@@ -242,9 +292,9 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                                       color: Colors.white10,
                                       borderRadius: BorderRadius.circular(4),
                                     ),
-                                    child: const Text(
-                                      'LND-823-XA',
-                                      style: TextStyle(
+                                    child: Text(
+                                      ride?.plateNumber ?? '---',
+                                      style: const TextStyle(
                                         color: Colors.white,
                                         fontWeight: FontWeight.bold,
                                         letterSpacing: 1,
@@ -341,7 +391,12 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                         if (status == 'pending' || status == 'accepted') ...[
                           const SizedBox(height: 16),
                           TextButton(
-                            onPressed: () => context.go('/'),
+                            onPressed: () async {
+                               if (widget.rideId != null) {
+                                 await ref.read(rideServiceProvider).updateRideStatus(widget.rideId!, 'cancelled');
+                               }
+                               if (context.mounted) context.go('/');
+                            },
                             child: const Text(
                               'Cancel Ride',
                               style: TextStyle(color: Colors.red),

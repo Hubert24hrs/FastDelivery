@@ -4,6 +4,13 @@ class RideModel {
   final String id;
   final String userId;
   final String? driverId;
+  final String? driverName;
+  final String? driverPhone;
+  final String? driverPhoto;
+  final String? carModel;
+  final String? plateNumber;
+  final GeoPoint? driverLocation;
+  
   final GeoPoint pickupLocation;
   final GeoPoint dropoffLocation;
   final String pickupAddress;
@@ -19,6 +26,12 @@ class RideModel {
     required this.id,
     required this.userId,
     this.driverId,
+    this.driverName,
+    this.driverPhone,
+    this.driverPhoto,
+    this.carModel,
+    this.plateNumber,
+    this.driverLocation,
     required this.pickupLocation,
     required this.dropoffLocation,
     required this.pickupAddress,
@@ -35,6 +48,12 @@ class RideModel {
       id: id,
       userId: data['userId'] ?? '',
       driverId: data['driverId'],
+      driverName: data['driverName'],
+      driverPhone: data['driverPhone'],
+      driverPhoto: data['driverPhoto'],
+      carModel: data['carModel'],
+      plateNumber: data['plateNumber'],
+      driverLocation: data['driverLocation'] as GeoPoint?,
       pickupLocation: data['pickupLocation'] as GeoPoint,
       dropoffLocation: data['dropoffLocation'] as GeoPoint,
       pickupAddress: data['pickupAddress'] ?? '',
@@ -51,6 +70,12 @@ class RideModel {
     return {
       'userId': userId,
       'driverId': driverId,
+      'driverName': driverName,
+      'driverPhone': driverPhone,
+      'driverPhoto': driverPhoto,
+      'carModel': carModel,
+      'plateNumber': plateNumber,
+      'driverLocation': driverLocation,
       'pickupLocation': pickupLocation,
       'dropoffLocation': dropoffLocation,
       'pickupAddress': pickupAddress,

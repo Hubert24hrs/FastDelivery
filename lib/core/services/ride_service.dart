@@ -26,12 +26,28 @@ class RideService {
   }
 
   // Update ride status and assign driver
-  Future<void> updateRideStatus(String rideId, String status, {String? driverId}) async {
+  Future<void> updateRideStatus(
+    String rideId, 
+    String status, {
+    String? driverId,
+    String? driverName,
+    String? driverPhone,
+    String? driverPhoto,
+    String? carModel,
+    String? plateNumber,
+    GeoPoint? driverLocation,
+  }) async {
     print('RideService: Updating ride $rideId to status $status');
     final Map<String, dynamic> data = {'status': status};
-    if (driverId != null) {
-      data['driverId'] = driverId;
-    }
+    
+    if (driverId != null) data['driverId'] = driverId;
+    if (driverName != null) data['driverName'] = driverName;
+    if (driverPhone != null) data['driverPhone'] = driverPhone;
+    if (driverPhoto != null) data['driverPhoto'] = driverPhoto;
+    if (carModel != null) data['carModel'] = carModel;
+    if (plateNumber != null) data['plateNumber'] = plateNumber;
+    if (driverLocation != null) data['driverLocation'] = driverLocation;
+
     await _ridesCollection.doc(rideId).update(data);
   }
 
@@ -43,5 +59,43 @@ class RideService {
       }
       return RideModel.fromMap(doc.data()!, doc.id);
     });
+  }
+
+  // Get active ride for user
+  Future<RideModel?> getActiveRideForUser(String userId) async {
+    try {
+      final snapshot = await _ridesCollection
+          .where('userId', isEqualTo: userId)
+          .where('status', whereIn: ['pending', 'accepted', 'arrived', 'in_progress'])
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        return RideModel.fromMap(snapshot.docs.first.data(), snapshot.docs.first.id);
+      }
+    } catch (e) {
+      print('Error getting active ride: $e');
+    }
+    return null;
+  }
+
+  // Get active ride for driver
+  Future<RideModel?> getActiveRideForDriver(String driverId) async {
+    try {
+      final snapshot = await _ridesCollection
+          .where('driverId', isEqualTo: driverId)
+          .where('status', whereIn: ['accepted', 'arrived', 'in_progress'])
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        return RideModel.fromMap(snapshot.docs.first.data(), snapshot.docs.first.id);
+      }
+    } catch (e) {
+      print('Error getting active driver ride: $e');
+    }
+    return null;
   }
 }
