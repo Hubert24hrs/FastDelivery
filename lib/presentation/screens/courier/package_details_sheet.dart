@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class PackageDetailsSheet extends StatefulWidget {
-  const PackageDetailsSheet({super.key});
+  final Function(Map<String, dynamic>) onSave;
+  
+  const PackageDetailsSheet({
+    super.key, 
+    required this.onSave,
+  });
 
   @override
   State<PackageDetailsSheet> createState() => _PackageDetailsSheetState();
@@ -14,6 +19,17 @@ class _PackageDetailsSheetState extends State<PackageDetailsSheet> {
   final _senderPhoneController = TextEditingController(text: '+234 8111605155');
   final _recipientPhoneController = TextEditingController(text: '+234 ');
   final _descriptionController = TextEditingController();
+
+  void _handleSave() {
+    final data = {
+      'isToDoorstep': _isToDoorstep,
+      'senderPhone': _senderPhoneController.text,
+      'recipientPhone': _recipientPhoneController.text,
+      'description': _descriptionController.text,
+    };
+    widget.onSave(data);
+    context.pop();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +145,7 @@ class _PackageDetailsSheetState extends State<PackageDetailsSheet> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () => context.pop(),
+                  onPressed: _handleSave,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFCCFF00), // Lime green
                     foregroundColor: Colors.black,

@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class RouteEntrySheet extends StatefulWidget {
-  const RouteEntrySheet({super.key});
+  final Function(String) onSave;
+
+  const RouteEntrySheet({
+    super.key,
+    required this.onSave,
+  });
 
   @override
   State<RouteEntrySheet> createState() => _RouteEntrySheetState();
@@ -11,6 +16,13 @@ class RouteEntrySheet extends StatefulWidget {
 
 class _RouteEntrySheetState extends State<RouteEntrySheet> {
   final _toController = TextEditingController();
+
+  void _handleSave() {
+    if (_toController.text.isNotEmpty) {
+      widget.onSave(_toController.text);
+      context.pop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +111,7 @@ class _RouteEntrySheetState extends State<RouteEntrySheet> {
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(vertical: 14),
                           ),
+                          onSubmitted: (_) => _handleSave(),
                         ),
                       ),
                     ],
@@ -120,6 +133,25 @@ class _RouteEntrySheetState extends State<RouteEntrySheet> {
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
                     alignment: Alignment.centerLeft,
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+                
+                // Done Button (Optional, but good for UX)
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _handleSave,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text('Set Destination'),
                   ),
                 ),
               ],

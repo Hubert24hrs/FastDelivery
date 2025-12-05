@@ -30,7 +30,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void _startExitAnimation() async {
     await _exitController.forward();
     if (mounted) {
-      context.go('/login');
+      context.go('/');
     }
   }
 

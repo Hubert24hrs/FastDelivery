@@ -1,5 +1,5 @@
+import 'package:fast_delivery/core/models/user_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -18,20 +18,20 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userAsync = ref.watch(currentUserIdProvider) != null 
-        ? ref.watch(databaseServiceProvider).getUser(ref.watch(currentUserIdProvider)!)
-        : null;
+    final userId = ref.watch(currentUserIdProvider);
+    final userStream = userId != null 
+        ? ref.watch(databaseServiceProvider).getUserStream(userId)
+        : const Stream<UserModel?>.empty();
 
     return Scaffold(
-      backgroundColor: Colors.white, // Matching reference light theme or keep dark? Reference is light. Let's try to adapt to dark or stick to reference. User said "features seen in the first reference image". I'll use a light theme for this screen to match reference closely, or maybe a dark version of it. Let's stick to the AppTheme (Dark) but layout of reference.
-      // Actually, the app is dark mode. A stark white screen might look out of place. I will use the AppTheme background but the LAYOUT of the reference.
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Payment', style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.transparent,
         iconTheme: const IconThemeData(color: Colors.black),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'), // Back to Home since it's from Drawer
+          onPressed: () => context.go('/'),
         ),
       ),
       body: SingleChildScrollView(
@@ -55,8 +55,8 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                     style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                   const SizedBox(height: 8),
-                  FutureBuilder(
-                    future: userAsync,
+                  StreamBuilder<UserModel?>(
+                    stream: userStream,
                     builder: (context, snapshot) {
                       final balance = snapshot.data?.walletBalance ?? 0.0;
                       return Text(

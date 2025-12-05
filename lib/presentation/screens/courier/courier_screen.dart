@@ -22,11 +22,32 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
   String _selectedSize = 'Motorcycle';
   bool _isLoading = false;
 
+  // Courier Request Data
+  Map<String, dynamic>? _packageDetails;
+  double _price = 0.0;
+  String _paymentMethod = 'Cash';
+  bool _receiverPays = false;
+  String _dropoffAddress = '';
+
   Future<void> _requestCourier() async {
     final userId = ref.read(currentUserIdProvider);
     if (userId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please login to request a courier')),
+      );
+      return;
+    }
+
+    if (_dropoffAddress.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a destination')),
+      );
+      return;
+    }
+
+    if (_price <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please propose a price')),
       );
       return;
     }
@@ -38,39 +59,24 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
       final position = await ref.read(locationServiceProvider).determinePosition();
       if (!mounted) return;
 
-      // 2. Process Payment
-      final userEmail = ref.read(authServiceProvider).currentUser?.email ?? 'user@example.com';
-      final price = _calculatePrice(_selectedSize);
-      
-      final paymentSuccess = await ref.read(paymentServiceProvider).chargeCard(
-        context: context,
-        amount: price,
-        email: userEmail,
-      );
-
-      if (!paymentSuccess) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Payment Failed or Cancelled')),
-          );
-          setState(() => _isLoading = false);
-        }
-        return;
-      }
+      // 2. Process Payment (Only if not Cash and not Receiver Pays)
+      // For now, we'll skip actual payment integration for 'Cash' or 'Receiver Pays'
+      // If 'Transfer' or Card, we would trigger payment here.
       
       // 3. Create Courier Request
       final courier = CourierModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         userId: userId,
         pickupLocation: GeoPoint(position.latitude, position.longitude),
-        dropoffLocation: const GeoPoint(6.5244, 3.3792), // Mock Dropoff
+        dropoffLocation: const GeoPoint(6.5244, 3.3792), // Mock Dropoff Coords for now
         pickupAddress: _pickupController.text.isEmpty ? 'Current Location' : _pickupController.text,
-        dropoffAddress: _dropoffController.text.isEmpty ? 'Selected Dropoff' : _dropoffController.text,
-        packageSize: _selectedSize, // Now storing Vehicle Type
-        receiverName: 'Receiver Name', // Placeholder
-        receiverPhone: '08000000000', // Placeholder
-        price: _calculatePrice(_selectedSize),
+        dropoffAddress: _dropoffAddress,
+        packageSize: _packageDetails?['description'] ?? _selectedSize, // Use description or vehicle type
+        receiverName: 'Receiver', // Could be added to PackageDetails
+        receiverPhone: _packageDetails?['recipientPhone'] ?? '',
+        price: _price,
         createdAt: DateTime.now(),
+        status: 'pending',
       );
 
       await ref.read(databaseServiceProvider).createCourierRequest(courier);
@@ -91,20 +97,19 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
     }
   }
 
-  double _calculatePrice(String vehicleType) {
-    switch (vehicleType) {
-      case 'Car': return 2500.0;
-      case 'Motorcycle': return 1000.0;
-      default: return 1000.0;
-    }
-  }
-
   void _openRouteEntry() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const RouteEntrySheet(),
+      builder: (context) => RouteEntrySheet(
+        onSave: (address) {
+          setState(() {
+            _dropoffAddress = address;
+            _dropoffController.text = address;
+          });
+        },
+      ),
     );
   }
 
@@ -113,7 +118,11 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const PackageDetailsSheet(),
+      builder: (context) => PackageDetailsSheet(
+        onSave: (data) {
+          setState(() => _packageDetails = data);
+        },
+      ),
     );
   }
 
@@ -122,14 +131,22 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const ProposePriceSheet(),
+      builder: (context) => ProposePriceSheet(
+        onSave: (data) {
+          setState(() {
+            _price = data['price'];
+            _paymentMethod = data['paymentMethod'];
+            _receiverPays = data['receiverPays'];
+          });
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // Changed base to white as per reference
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           // Map Background Placeholder (Simulating the map behind)
@@ -224,11 +241,12 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
                         children: [
                           const Icon(Icons.search, color: Colors.black54),
                           const SizedBox(width: 12),
-                          const Text(
-                            'To',
+                          Text(
+                            _dropoffAddress.isEmpty ? 'To' : _dropoffAddress,
                             style: TextStyle(
-                              color: Colors.black54,
+                              color: _dropoffAddress.isEmpty ? Colors.black54 : Colors.black,
                               fontSize: 16,
+                              fontWeight: _dropoffAddress.isEmpty ? FontWeight.normal : FontWeight.bold,
                             ),
                           ),
                           const Spacer(),
@@ -253,6 +271,7 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
                     'Package details', 
                     Icons.tune, 
                     onTap: _openPackageDetails,
+                    subtitle: _packageDetails != null ? 'Details added' : null,
                   ),
                   const SizedBox(height: 8),
                   
@@ -261,6 +280,7 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
                     'Propose your price', 
                     Icons.money,
                     onTap: _openProposePrice,
+                    subtitle: _price > 0 ? '₦${_price.toStringAsFixed(0)}' : null,
                   ),
                   
                   const SizedBox(height: 24),
@@ -330,7 +350,7 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
     );
   }
 
-  Widget _buildListTile(String title, IconData icon, {VoidCallback? onTap}) {
+  Widget _buildListTile(String title, IconData icon, {VoidCallback? onTap, String? subtitle}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -343,13 +363,27 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
           children: [
             Icon(icon, color: Colors.black87, size: 20),
             const SizedBox(width: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.black87,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (subtitle != null)
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+              ],
             ),
             const Spacer(),
             const Icon(Icons.chevron_right, color: Colors.black54),

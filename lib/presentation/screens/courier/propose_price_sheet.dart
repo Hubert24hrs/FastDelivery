@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class ProposePriceSheet extends StatefulWidget {
-  const ProposePriceSheet({super.key});
+  final Function(Map<String, dynamic>) onSave;
+
+  const ProposePriceSheet({
+    super.key,
+    required this.onSave,
+  });
 
   @override
   State<ProposePriceSheet> createState() => _ProposePriceSheetState();
@@ -13,6 +18,17 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
   bool _receiverPays = false;
   String _paymentMethod = 'Cash'; // Cash or Transfer
   final _amountController = TextEditingController();
+
+  void _handleSave() {
+    final price = double.tryParse(_amountController.text) ?? 0.0;
+    final data = {
+      'price': price,
+      'paymentMethod': _paymentMethod,
+      'receiverPays': _receiverPays,
+    };
+    widget.onSave(data);
+    context.pop();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +167,7 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () => context.pop(),
+                  onPressed: _handleSave,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFCCFF00), // Lime green
                     foregroundColor: Colors.black,

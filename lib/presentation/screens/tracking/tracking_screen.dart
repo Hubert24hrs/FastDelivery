@@ -2,11 +2,13 @@ import 'package:fast_delivery/core/models/ride_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
+import 'package:url_launcher/url_launcher.dart';
 
 class TrackingScreen extends ConsumerStatefulWidget {
   final String? destinationName;
@@ -122,15 +124,17 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
       body: Stack(
         children: [
           // Map Background
-          mapbox.MapWidget(
-            key: const ValueKey("mapWidget"),
-            onMapCreated: _onMapCreated,
-            styleUri: mapbox.MapboxStyles.DARK,
-            cameraOptions: mapbox.CameraOptions(
-              center: mapbox.Point(coordinates: mapbox.Position(3.3792, 6.5244)), // Lagos
-              zoom: 13.0,
-            ),
-          ),
+          kIsWeb 
+            ? Container(color: Colors.grey[900])
+            : mapbox.MapWidget(
+                key: const ValueKey("mapWidget"),
+                onMapCreated: _onMapCreated,
+                styleUri: mapbox.MapboxStyles.DARK,
+                cameraOptions: mapbox.CameraOptions(
+                  center: mapbox.Point(coordinates: mapbox.Position(3.3792, 6.5244)), // Lagos
+                  zoom: 13.0,
+                ),
+              ),
 
           // Back Button
           Positioned(
@@ -312,7 +316,15 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                             children: [
                               Expanded(
                                 child: OutlinedButton.icon(
-                                  onPressed: () {},
+                                  onPressed: () async {
+                                    final Uri launchUri = Uri(
+                                      scheme: 'tel',
+                                      path: ride?.driverPhone ?? '08012345678',
+                                    );
+                                    if (await canLaunchUrl(launchUri)) {
+                                      await launchUrl(launchUri);
+                                    }
+                                  },
                                   icon: const Icon(Icons.phone),
                                   label: const Text('Call Driver'),
                                   style: OutlinedButton.styleFrom(
@@ -325,7 +337,12 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                               const SizedBox(width: 16),
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    context.push('/chat', extra: {
+                                      'rideId': ride!.id,
+                                      'otherUserName': ride.driverName ?? 'Driver',
+                                    });
+                                  },
                                   icon: const Icon(Icons.message),
                                   label: const Text('Message'),
                                   style: ElevatedButton.styleFrom(

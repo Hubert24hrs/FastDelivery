@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DriverDashboardScreen extends ConsumerStatefulWidget {
   const DriverDashboardScreen({super.key});
@@ -22,25 +23,6 @@ class DriverDashboardScreen extends ConsumerStatefulWidget {
 class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   
-  // Mock Data for Couriers (Still mock for now as we focused on Rides)
-  final List<CourierModel> _mockCouriers = [
-    CourierModel(
-      id: '1',
-      pickupAddress: 'Ikeja City Mall',
-      dropoffAddress: 'Magodo Phase 2',
-      price: 1500,
-      status: 'pending',
-      riderId: null,
-      userId: 'user3',
-      pickupLocation: const GeoPoint(6.6018, 3.3515),
-      dropoffLocation: const GeoPoint(6.6209, 3.3831),
-      createdAt: DateTime.now(),
-      packageSize: 'Medium',
-      receiverName: 'John Doe',
-      receiverPhone: '08012345678',
-    ),
-  ];
-
   bool _isAccepting = false;
 
 
@@ -288,20 +270,28 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
   }
 
   Widget _buildCouriersList() {
-    if (_mockCouriers.isEmpty) {
-      return const Center(
-        child: Text(
-          'No courier requests nearby',
-          style: TextStyle(color: Colors.white54),
-        ),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _mockCouriers.length,
-      itemBuilder: (context, index) {
-        return _buildCourierCard(_mockCouriers[index]);
+    final couriersAsync = ref.watch(activeCouriersProvider);
+
+    return couriersAsync.when(
+      data: (couriers) {
+        if (couriers.isEmpty) {
+          return const Center(
+            child: Text(
+              'No courier requests nearby',
+              style: TextStyle(color: Colors.white54),
+            ),
+          );
+        }
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: couriers.length,
+          itemBuilder: (context, index) {
+            return _buildCourierCard(couriers[index]);
+          },
+        );
       },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err', style: const TextStyle(color: Colors.red))),
     );
   }
 
@@ -345,35 +335,78 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
               const SizedBox(height: 12),
               _buildLocationRow(Icons.location_on, ride.dropoffAddress, Colors.redAccent),
               const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => _declineRide(ride),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.redAccent,
-                        side: const BorderSide(color: Colors.redAccent),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final Uri launchUri = Uri(
+                              scheme: 'tel',
+                              path: '08012345678', // Mock phone number
+                            );
+                            if (await canLaunchUrl(launchUri)) {
+                              await launchUrl(launchUri);
+                            }
+                          },
+                          icon: const Icon(Icons.phone, size: 18),
+                          label: const Text('CALL'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: Colors.white24),
+                          ),
+                        ),
                       ),
-                      child: const Text('DECLINE'),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isAccepting ? null : () => _acceptRide(ride),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            context.push('/chat', extra: {
+                              'rideId': ride.id,
+                              'otherUserName': 'Passenger', // Mock name
+                            });
+                          },
+                          icon: const Icon(Icons.chat, size: 18),
+                          label: const Text('CHAT'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: Colors.white24),
+                          ),
+                        ),
                       ),
-                      child: _isAccepting 
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : const Text('ACCEPT'),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _declineRide(ride),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.redAccent,
+                            side: const BorderSide(color: Colors.redAccent),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('DECLINE'),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _isAccepting ? null : () => _acceptRide(ride),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: _isAccepting 
+                            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : const Text('ACCEPT'),
+                        ),
+                      ),
+                    ],
+                  ),
+
             ],
           ),
         ),
@@ -510,18 +543,24 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ride Declined')));
   }
 
-  void _acceptCourier(CourierModel courier) {
-    setState(() {
-      _mockCouriers.remove(courier);
-    });
-    context.push('/driver-navigation', extra: {'courier': courier});
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Courier Request Accepted!')));
+  Future<void> _acceptCourier(CourierModel courier) async {
+    try {
+      final driverId = ref.read(authServiceProvider).currentUser?.uid ?? 'driver_1';
+      await ref.read(databaseServiceProvider).updateCourierStatus(courier.id, 'accepted', driverId);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Courier Request Accepted!')));
+        context.push('/driver-navigation', extra: {'courier': courier});
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error accepting courier: $e')));
+      }
+    }
   }
 
   void _declineCourier(CourierModel courier) {
-    setState(() {
-      _mockCouriers.remove(courier);
-    });
+    // Just ignore for now
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Courier Request Declined')));
   }
 }

@@ -9,6 +9,7 @@ import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
+import 'package:url_launcher/url_launcher.dart';
 
 class DriverNavigationScreen extends ConsumerStatefulWidget {
   final RideModel? ride;
@@ -92,11 +93,23 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
 
   Future<void> _updateDriverLocationInFirestore(Position position) async {
     try {
-      await ref.read(rideServiceProvider).updateRideStatus(
-        widget.ride!.id, 
-        _currentStatus,
-        driverLocation: GeoPoint(position.latitude, position.longitude),
-      );
+      final location = GeoPoint(position.latitude, position.longitude);
+      
+      if (widget.ride != null) {
+        await ref.read(rideServiceProvider).updateRideStatus(
+          widget.ride!.id, 
+          _currentStatus,
+          driverLocation: location,
+        );
+      } else if (widget.courier != null) {
+        final driverId = ref.read(authServiceProvider).currentUser?.uid ?? 'driver_1';
+        await ref.read(databaseServiceProvider).updateCourierStatus(
+          widget.courier!.id, 
+          _currentStatus, 
+          driverId,
+          driverLocation: location,
+        );
+      }
     } catch (e) {
       debugPrint('Error updating driver location: $e');
     }
@@ -202,6 +215,89 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
                             ],
                           ),
                           const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () async {
+                                    final Uri launchUri = Uri(
+                                      scheme: 'tel',
+                                      path: '08012345678', // Mock phone number
+                                    );
+                                    if (await canLaunchUrl(launchUri)) {
+                                      await launchUrl(launchUri);
+                                    }
+                                  },
+                                  icon: const Icon(Icons.phone, size: 18),
+                                  label: const Text('CALL'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    side: const BorderSide(color: Colors.white24),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    context.push('/chat', extra: {
+                                      'rideId': ride.id,
+                                      'otherUserName': 'Passenger',
+                                    });
+                                  },
+                                  icon: const Icon(Icons.chat, size: 18),
+                                  label: const Text('CHAT'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    side: const BorderSide(color: Colors.white24),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () async {
+                                    final lat = ride.dropoffLocation.latitude;
+                                    final lng = ride.dropoffLocation.longitude;
+                                    final uri = Uri.parse('google.navigation:q=$lat,$lng&mode=d');
+                                    debugPrint('Attempting to launch: $uri');
+                                    
+                                    if (await canLaunchUrl(uri)) {
+                                      debugPrint('Launching native navigation...');
+                                      await launchUrl(uri);
+                                    } else {
+                                      debugPrint('Native navigation failed. Trying fallback...');
+                                      // Fallback for iOS or if scheme not found
+                                      final webUri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
+                                      debugPrint('Attempting fallback: $webUri');
+                                      
+                                      if (await canLaunchUrl(webUri)) {
+                                        debugPrint('Launching fallback...');
+                                        await launchUrl(webUri, mode: LaunchMode.externalApplication);
+                                      } else {
+                                        debugPrint('Could not launch fallback either.');
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Could not open Maps')),
+                                          );
+                                        }
+                                      }
+                                    }
+                                  },
+                                  icon: const Icon(Icons.navigation, size: 18),
+                                  label: const Text('NAV'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.blueAccent,
+                                    side: const BorderSide(color: Colors.blueAccent),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
@@ -258,12 +354,243 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
                 ),
               ),
 
-              // Debug: Simulate Movement Button
+              // Debug: Simulate Movement Button (Hidden for Real GPS)
+              /*
               Positioned(
                 bottom: 180,
                 right: 16,
                 child: FloatingActionButton(
                   heroTag: 'debug_move',
+                  backgroundColor: Colors.purple,
+                  child: const Icon(Icons.directions_run, color: Colors.white),
+                  onPressed: _simulateMovement,
+                ),
+              ),
+              */
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+    // Keep existing courier view logic separate or refactor later
+  Widget _buildCourierView() {
+    final courierStream = ref.watch(databaseServiceProvider).getActiveCouriers().map((list) {
+      try {
+        return list.firstWhere((c) => c.id == widget.courier!.id);
+      } catch (e) {
+        return widget.courier!; // Fallback if not found (e.g. completed)
+      }
+    });
+
+    return Scaffold(
+      body: StreamBuilder<CourierModel>(
+        stream: courierStream,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          final courier = snapshot.data ?? widget.courier!;
+          final status = courier.status;
+          _currentStatus = status;
+
+          return Stack(
+            children: [
+              mapbox.MapWidget(
+                onMapCreated: _onMapCreated,
+                cameraOptions: mapbox.CameraOptions(
+                  center: mapbox.Point(
+                    coordinates: mapbox.Position(courier.pickupLocation.longitude, courier.pickupLocation.latitude),
+                  ),
+                  zoom: 13.0,
+                ),
+              ),
+              
+              // Top Bar
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                                onPressed: () => context.pop(),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _getCourierStatusText(status),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Courier: ${courier.packageSize}',
+                                      style: const TextStyle(color: Colors.white70),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () async {
+                                    final Uri launchUri = Uri(
+                                      scheme: 'tel',
+                                      path: courier.receiverPhone, 
+                                    );
+                                    if (await canLaunchUrl(launchUri)) {
+                                      await launchUrl(launchUri);
+                                    }
+                                  },
+                                  icon: const Icon(Icons.phone, size: 18),
+                                  label: const Text('CALL'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    side: const BorderSide(color: Colors.white24),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () async {
+                                    final lat = courier.dropoffLocation.latitude;
+                                    final lng = courier.dropoffLocation.longitude;
+                                    final uri = Uri.parse('google.navigation:q=$lat,$lng&mode=d');
+                                    debugPrint('Attempting to launch: $uri');
+
+                                    if (await canLaunchUrl(uri)) {
+                                      debugPrint('Launching native navigation...');
+                                      await launchUrl(uri);
+                                    } else {
+                                      debugPrint('Native navigation failed. Trying fallback...');
+                                      final webUri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
+                                      debugPrint('Attempting fallback: $webUri');
+                                      
+                                      if (await canLaunchUrl(webUri)) {
+                                        debugPrint('Launching fallback...');
+                                        await launchUrl(webUri, mode: LaunchMode.externalApplication);
+                                      } else {
+                                        debugPrint('Could not launch fallback either.');
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Could not open Maps')),
+                                          );
+                                        }
+                                      }
+                                    }
+                                  },
+                                  icon: const Icon(Icons.navigation, size: 18),
+                                  label: const Text('NAV'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.blueAccent,
+                                    side: const BorderSide(color: Colors.blueAccent),
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : () => _advanceCourierState(courier),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryColor,
+                                disabledBackgroundColor: Colors.grey,
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: _isLoading 
+                                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                                : Text(
+                                    _getNextCourierButtonText(status),
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Bottom Info Sheet
+              Positioned(
+                bottom: 30,
+                left: 16,
+                right: 16,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildStepRow(Icons.my_location, 'Pickup: ${courier.pickupAddress}', status == 'accepted'),
+                        const SizedBox(height: 8),
+                        _buildStepRow(Icons.flag, 'Dropoff: ${courier.dropoffAddress}', status == 'picked_up'),
+                        const SizedBox(height: 12),
+                        const Divider(color: Colors.white24),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.info_outline, color: Colors.white54, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Receiver: ${courier.receiverName} (${courier.receiverPhone})',
+                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Debug: Simulate Movement Button
+              Positioned(
+                bottom: 220,
+                right: 16,
+                child: FloatingActionButton(
+                  heroTag: 'debug_move_courier',
                   backgroundColor: Colors.purple,
                   child: const Icon(Icons.directions_run, color: Colors.white),
                   onPressed: _simulateMovement,
@@ -276,11 +603,49 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
     );
   }
 
-    // Keep existing courier view logic separate or refactor later
-    Widget _buildCourierView() {
-      // ... (Reuse existing logic for courier, but simplified for now to avoid errors)
-      return const Scaffold(body: Center(child: Text('Courier Navigation Placeholder')));
+  String _getCourierStatusText(String status) {
+    if (status == 'accepted') return 'Heading to Pickup';
+    if (status == 'picked_up') return 'Heading to Dropoff';
+    if (status == 'delivered') return 'Package Delivered';
+    return 'Completed';
+  }
+
+  String _getNextCourierButtonText(String status) {
+    if (status == 'accepted') return 'CONFIRM PICKUP';
+    if (status == 'picked_up') return 'CONFIRM DELIVERY';
+    return 'COMPLETE';
+  }
+
+  Future<void> _advanceCourierState(CourierModel courier) async {
+    setState(() => _isLoading = true);
+    
+    try {
+      String nextStatus = '';
+      if (courier.status == 'accepted') nextStatus = 'picked_up';
+      else if (courier.status == 'picked_up') nextStatus = 'delivered';
+
+      debugPrint('DriverNavigation: Courier Transitioning to nextStatus=$nextStatus');
+
+      if (nextStatus.isNotEmpty) {
+        final driverId = ref.read(authServiceProvider).currentUser?.uid ?? 'driver_1';
+        await ref.read(databaseServiceProvider).updateCourierStatus(courier.id, nextStatus, driverId);
+        
+        if (nextStatus == 'delivered') {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Delivery Confirmed!')));
+            context.pop();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('DriverNavigation: Error updating courier status: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
 
   String _getStatusText(String status) {
     if (status == 'accepted') return 'Heading to Pickup';

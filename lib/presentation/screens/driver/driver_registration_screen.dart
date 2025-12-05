@@ -1,29 +1,49 @@
 import 'dart:io';
 
+import 'package:fast_delivery/core/models/driver_application_model.dart';
+import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-class DriverRegistrationScreen extends StatefulWidget {
+class DriverRegistrationScreen extends ConsumerStatefulWidget {
   final String type; // 'driver' or 'courier'
 
   const DriverRegistrationScreen({super.key, required this.type});
 
   @override
-  State<DriverRegistrationScreen> createState() => _DriverRegistrationScreenState();
+  ConsumerState<DriverRegistrationScreen> createState() => _DriverRegistrationScreenState();
 }
 
-class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
+class _DriverRegistrationScreenState extends ConsumerState<DriverRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   final ImagePicker _picker = ImagePicker();
+
+  // Controllers
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _makeModelController = TextEditingController();
+  final _yearController = TextEditingController();
+  final _plateController = TextEditingController();
 
   // Document Files
   File? _licenseImage;
   File? _registrationImage;
   File? _insuranceImage;
   File? _permitImage;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _makeModelController.dispose();
+    _yearController.dispose();
+    _plateController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,15 +77,15 @@ class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
               ),
               const SizedBox(height: 32),
 
-              _buildTextField('Full Name'),
+              _buildTextField('Full Name', _nameController),
               const SizedBox(height: 16),
-              _buildTextField('Phone Number'),
+              _buildTextField('Phone Number', _phoneController),
               const SizedBox(height: 16),
-              _buildTextField('Vehicle Make & Model'),
+              _buildTextField('Vehicle Make & Model', _makeModelController),
               const SizedBox(height: 16),
-              _buildTextField('Vehicle Year'),
+              _buildTextField('Vehicle Year', _yearController),
               const SizedBox(height: 16),
-              _buildTextField('License Plate Number'),
+              _buildTextField('License Plate Number', _plateController),
               
               const SizedBox(height: 32),
               
@@ -108,8 +128,9 @@ class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
     );
   }
 
-  Widget _buildTextField(String label) {
+  Widget _buildTextField(String label, TextEditingController controller) {
     return TextFormField(
+      controller: controller,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
@@ -189,9 +210,9 @@ class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
     }
   }
 
-  void _submitForm() async {
+  Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // Validate Documents
+      // Validate Documents (Simulated check)
       if (_licenseImage == null || _registrationImage == null || _insuranceImage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please upload all required documents')),
@@ -201,12 +222,36 @@ class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
 
       setState(() => _isLoading = true);
       
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
-      
-      if (mounted) {
-        setState(() => _isLoading = false);
-        context.go('/driver-pending');
+      try {
+        final userId = ref.read(currentUserIdProvider);
+        if (userId == null) throw Exception('User not logged in');
+
+        final app = DriverApplicationModel(
+          id: userId,
+          fullName: _nameController.text.trim(),
+          phoneNumber: _phoneController.text.trim(),
+          vehicleMake: _makeModelController.text.split(' ').first, // Simple split
+          vehicleModel: _makeModelController.text,
+          vehicleYear: _yearController.text.trim(),
+          licensePlate: _plateController.text.trim(),
+          createdAt: DateTime.now(),
+        );
+
+        await ref.read(databaseServiceProvider).submitDriverApplication(app);
+
+        if (mounted) {
+          context.go('/driver-pending');
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error submitting application: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     }
   }

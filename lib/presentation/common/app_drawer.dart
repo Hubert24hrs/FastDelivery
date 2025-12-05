@@ -12,18 +12,19 @@ class AppDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userAsync = ref.watch(currentUserIdProvider) != null
-        ? ref.watch(databaseServiceProvider).getUser(ref.watch(currentUserIdProvider)!)
-        : null;
+        ? ref.watch(databaseServiceProvider).getUserStream(ref.watch(currentUserIdProvider)!)
+        : const Stream.empty();
 
     return Drawer(
       backgroundColor: Colors.white,
       child: Column(
         children: [
           // Profile Header
-          FutureBuilder(
-            future: userAsync,
+          StreamBuilder(
+            stream: userAsync,
             builder: (context, snapshot) {
-              final name = snapshot.data?.displayName ?? 'Hubert';
+              final name = snapshot.data?.displayName ?? 'User';
+              final email = snapshot.data?.email ?? '';
               
               return InkWell(
                 onTap: () {
@@ -54,14 +55,17 @@ class AppDrawer extends ConsumerWidget {
                                 fontWeight: FontWeight.bold,
                                 color: Colors.black,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 4),
-                            const Text(
-                              'My account',
-                              style: TextStyle(
+                             Text(
+                              email.isNotEmpty ? email : 'My account',
+                              style: const TextStyle(
                                 color: Color(0xFF4CAF50), // Green
                                 fontWeight: FontWeight.w500,
+                                fontSize: 14,
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
@@ -99,8 +103,11 @@ class AppDrawer extends ConsumerWidget {
                 _buildMenuItem(
                   context, 
                   icon: FontAwesomeIcons.clockRotateLeft, 
-                  title: 'My Rides', 
-                  onTap: () {},
+                  title: 'History', 
+                  onTap: () {
+                    context.pop();
+                    context.go('/history');
+                  },
                 ),
                 _buildMenuItem(
                   context, 

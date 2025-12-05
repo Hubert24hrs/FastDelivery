@@ -1,67 +1,95 @@
-
+import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
-class TransactionHistoryScreen extends StatelessWidget {
+class TransactionHistoryScreen extends ConsumerWidget {
   const TransactionHistoryScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Mock Data
-    final transactions = [
-      {'title': 'Ride Payment', 'date': 'Today, 10:30 AM', 'amount': '-₦1,500', 'isCredit': false},
-      {'title': 'Wallet Top Up', 'date': 'Yesterday, 4:15 PM', 'amount': '+₦5,000', 'isCredit': true},
-      {'title': 'Courier Service', 'date': 'Dec 1, 2:00 PM', 'amount': '-₦2,200', 'isCredit': false},
-      {'title': 'Ride Payment', 'date': 'Nov 28, 9:45 AM', 'amount': '-₦800', 'isCredit': false},
-      {'title': 'Wallet Top Up', 'date': 'Nov 25, 11:00 AM', 'amount': '+₦10,000', 'isCredit': true},
-    ];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userId = ref.watch(currentUserIdProvider);
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Transaction History'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text(
+          'Transaction History',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: transactions.length,
-        separatorBuilder: (context, index) => const Divider(color: Colors.white10),
-        itemBuilder: (context, index) {
-          final tx = transactions[index];
-          final isCredit = tx['isCredit'] as bool;
+      body: userId == null
+          ? const Center(child: Text('Please login to view transactions'))
+          : _buildTransactionList(ref, userId),
+    );
+  }
 
-          return ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isCredit ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+  Widget _buildTransactionList(WidgetRef ref, String userId) {
+    final transactionsStream = ref.watch(databaseServiceProvider).getUserTransactions(userId);
+
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: transactionsStream,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final transactions = snapshot.data ?? [];
+        if (transactions.isEmpty) {
+          return const Center(child: Text('No transactions yet'));
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: transactions.length,
+          itemBuilder: (context, index) {
+            final tx = transactions[index];
+            final amount = tx['amount'] as double;
+            final type = tx['type'] as String;
+            final isDeposit = type == 'deposit';
+            final date = tx['createdAt'] != null ? tx['createdAt'] as DateTime : DateTime.now();
+
+            return Card(
+              elevation: 0,
+              color: Colors.grey[50],
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: isDeposit ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                  child: Icon(
+                    isDeposit ? Icons.arrow_downward : Icons.arrow_upward,
+                    color: isDeposit ? Colors.green : Colors.red,
+                  ),
+                ),
+                title: Text(
+                  tx['description'] ?? 'Transaction',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(DateFormat('MMM d, y • h:mm a').format(date)),
+                trailing: Text(
+                  '${isDeposit ? '+' : '-'}₦${amount.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: isDeposit ? Colors.green : Colors.red,
+                  ),
+                ),
               ),
-              child: Icon(
-                isCredit ? FontAwesomeIcons.arrowDown : FontAwesomeIcons.arrowUp,
-                color: isCredit ? Colors.green : Colors.red,
-                size: 16,
-              ),
-            ),
-            title: Text(
-              tx['title'] as String,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(
-              tx['date'] as String,
-              style: const TextStyle(color: Colors.white54),
-            ),
-            trailing: Text(
-              tx['amount'] as String,
-              style: GoogleFonts.roboto(
-                color: isCredit ? Colors.green : Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-          );
-        },
-      ),
+            );
+          },
+        );
+      },
     );
   }
 }

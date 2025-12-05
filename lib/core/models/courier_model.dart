@@ -8,6 +8,7 @@ class CourierModel {
   final GeoPoint dropoffLocation;
   final String pickupAddress;
   final String dropoffAddress;
+  final GeoPoint? driverLocation;
   final String packageSize; // 'Small', 'Medium', 'Large'
   final String receiverName;
   final String receiverPhone;
@@ -26,6 +27,7 @@ class CourierModel {
     required this.dropoffLocation,
     required this.pickupAddress,
     required this.dropoffAddress,
+    this.driverLocation,
     required this.packageSize,
     required this.receiverName,
     required this.receiverPhone,
@@ -45,6 +47,7 @@ class CourierModel {
       dropoffLocation: data['dropoffLocation'] as GeoPoint,
       pickupAddress: data['pickupAddress'] ?? '',
       dropoffAddress: data['dropoffAddress'] ?? '',
+      driverLocation: data['driverLocation'] as GeoPoint?,
       packageSize: data['packageSize'] ?? 'Small',
       receiverName: data['receiverName'] ?? '',
       receiverPhone: data['receiverPhone'] ?? '',
@@ -64,6 +67,7 @@ class CourierModel {
       'dropoffLocation': dropoffLocation,
       'pickupAddress': pickupAddress,
       'dropoffAddress': dropoffAddress,
+      'driverLocation': driverLocation,
       'packageSize': packageSize,
       'receiverName': receiverName,
       'receiverPhone': receiverPhone,

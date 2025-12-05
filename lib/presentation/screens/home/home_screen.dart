@@ -3,6 +3,7 @@ import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/app_drawer.dart';
 import 'package:fast_delivery/presentation/screens/booking/booking_sheet.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -57,15 +58,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: Stack(
         children: [
           // Map Background
-          mapbox.MapWidget(
-            key: const ValueKey("mapWidget"),
-            onMapCreated: _onMapCreated,
-            styleUri: mapbox.MapboxStyles.DARK,
-            cameraOptions: mapbox.CameraOptions(
-              center: mapbox.Point(coordinates: mapbox.Position(3.3792, 6.5244)), // Lagos
-              zoom: 13.0,
-            ),
-          ),
+          kIsWeb
+              ? Container(color: Colors.grey[900])
+              : mapbox.MapWidget(
+                  key: const ValueKey("mapWidget"),
+                  onMapCreated: _onMapCreated,
+                  styleUri: mapbox.MapboxStyles.DARK,
+                  cameraOptions: mapbox.CameraOptions(
+                    center: mapbox.Point(coordinates: mapbox.Position(3.3792, 6.5244)), // Lagos
+                    zoom: 13.0,
+                  ),
+                ),
           
           // Menu Button (Top Left)
           Positioned(
