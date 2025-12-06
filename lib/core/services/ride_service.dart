@@ -82,6 +82,27 @@ class RideService {
     return null;
   }
 
+  // Cancel ALL active rides for a user (cleanup utility)
+  Future<int> cancelAllActiveRidesForUser(String userId) async {
+    int cancelledCount = 0;
+    try {
+      final snapshot = await _ridesCollection
+          .where('userId', isEqualTo: userId)
+          .where('status', whereIn: ['pending', 'accepted', 'arrived', 'in_progress'])
+          .get();
+
+      for (final doc in snapshot.docs) {
+        await doc.reference.update({'status': 'cancelled'});
+        cancelledCount++;
+        print('RideService: Cancelled ride ${doc.id}');
+      }
+    } catch (e) {
+      print('Error cancelling all rides: $e');
+    }
+    return cancelledCount;
+  }
+
+
   // Get active ride for driver
   Future<RideModel?> getActiveRideForDriver(String driverId) async {
     try {

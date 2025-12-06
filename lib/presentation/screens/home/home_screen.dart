@@ -143,12 +143,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ],
                       ),
                     ),
+                    // Cancel Ride Button (X)
                     IconButton(
                       icon: const Icon(Icons.close, color: Colors.black54),
-                      onPressed: () {
-                        setState(() {
-                          _activeRide = null;
-                        });
+                      tooltip: 'Cancel this ride',
+                      onPressed: () async {
+                        // Cancel ALL active rides for this user in Firestore
+                        try {
+                          final userId = ref.read(authServiceProvider).currentUser?.uid;
+                          if (userId != null) {
+                            final count = await ref.read(rideServiceProvider).cancelAllActiveRidesForUser(userId);
+                            debugPrint('Cancelled $count active rides');
+                          }
+                          setState(() {
+                            _activeRide = null;
+                          });
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('All active rides cancelled')),
+                            );
+                          }
+                        } catch (e) {
+                          debugPrint('Error cancelling rides: $e');
+                        }
                       },
                     ),
                     ElevatedButton(
