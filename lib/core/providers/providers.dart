@@ -7,6 +7,7 @@ import 'package:fast_delivery/core/services/location_service.dart';
 import 'package:fast_delivery/core/services/payment_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fast_delivery/core/services/ride_service.dart';
+import 'package:fast_delivery/core/services/storage_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // ... other providers
@@ -25,6 +26,7 @@ final authServiceProvider = Provider<AuthService>((ref) => AuthService());
 final databaseServiceProvider = Provider<DatabaseService>((ref) => DatabaseService());
 final locationServiceProvider = Provider<LocationService>((ref) => LocationService());
 final paymentServiceProvider = Provider<PaymentService>((ref) => PaymentService());
+final storageServiceProvider = Provider<StorageService>((ref) => StorageService());
 
 // Auth State
 final authStateProvider = StreamProvider<User?>((ref) {

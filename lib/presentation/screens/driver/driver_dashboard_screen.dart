@@ -60,7 +60,8 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: const AppDrawer(),
-      backgroundColor: Colors.black, // Dark background for dashboard
+      backgroundColor: Colors.transparent, // Transparent so gradient shows
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -71,40 +72,46 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
       ),
-      body: Column(
-        children: [
-          // Status Toggle
-          Container(
-            margin: const EdgeInsets.all(16),
-            child: GlassCard(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      isOnline ? 'You are ONLINE' : 'You are OFFLINE',
-                      style: TextStyle(
-                        color: isOnline ? Colors.greenAccent : Colors.white54,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppTheme.backgroundGradient,
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 100), // Spacing for AppBar
+            // Status Toggle
+            Container(
+              margin: const EdgeInsets.all(16),
+              child: GlassCard(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        isOnline ? 'You are ONLINE' : 'You are OFFLINE',
+                        style: TextStyle(
+                          color: isOnline ? AppTheme.primaryColor : Colors.white54,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
-                    ),
-                    Switch(
-                      value: isOnline,
-                      activeColor: Colors.greenAccent,
-                      onChanged: (val) => ref.read(driverOnlineProvider.notifier).set(val),
-                    ),
-                  ],
+                      Switch(
+                        value: isOnline,
+                        activeColor: AppTheme.primaryColor,
+                        onChanged: (val) => ref.read(driverOnlineProvider.notifier).set(val),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
 
-          Expanded(
-            child: isOnline ? _buildOnlineView() : _buildOfflineView(),
-          ),
-        ],
+            Expanded(
+              child: isOnline ? _buildOnlineView() : _buildOfflineView(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -189,16 +196,7 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
             onPressed: () => _clearAllRides(),
           ),
         ),
-        Positioned(
-          bottom: 16,
-          right: 16,
-          child: FloatingActionButton(
-            heroTag: 'debug_btn',
-            backgroundColor: Colors.red,
-            child: const Icon(Icons.bug_report, color: Colors.white),
-            onPressed: () => _createDebugRide(),
-          ),
-        ),
+
       ],
     );
   }
@@ -229,30 +227,6 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
     );
   }
 
-  Future<void> _createDebugRide() async {
-    try {
-      final ride = RideModel(
-        id: 'debug_${DateTime.now().millisecondsSinceEpoch}',
-        userId: 'debug_user',
-        pickupLocation: const GeoPoint(6.5244, 3.3792),
-        dropoffLocation: const GeoPoint(6.4281, 3.4241),
-        pickupAddress: 'Debug Pickup',
-        dropoffAddress: 'Debug Dropoff',
-        price: 500,
-        createdAt: DateTime.now(),
-        status: 'pending',
-      );
-      await ref.read(rideServiceProvider).createRide(ride);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Debug Ride Created')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Debug Error: $e')));
-      }
-    }
-  }
-
   Future<void> _clearAllRides() async {
     try {
       final rides = await ref.read(rideServiceProvider).getAvailableRides().first;
@@ -268,6 +242,8 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
       }
     }
   }
+
+
 
   Widget _buildCouriersList() {
     final couriersAsync = ref.watch(activeCouriersProvider);
@@ -341,9 +317,16 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () async {
+                            final phone = ride.userPhone ?? ride.driverPhone; // Fallback or handle null
+                            if (phone == null || phone.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('No phone number available')),
+                              );
+                              return;
+                            }
                             final Uri launchUri = Uri(
                               scheme: 'tel',
-                              path: '08012345678', // Mock phone number
+                              path: phone,
                             );
                             if (await canLaunchUrl(launchUri)) {
                               await launchUrl(launchUri);
@@ -538,9 +521,37 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
     }
   }
 
-  void _declineRide(RideModel ride) {
-    // In a real app, we might update a "declinedDrivers" list in Firestore
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ride Declined')));
+  Future<void> _declineRide(RideModel ride) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Decline Ride?'),
+        content: const Text('Are you sure you want to decline this request?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('CANCEL')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('DECLINE'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      try {
+        // In a real app, adding to 'declinedDrivers' list is better.
+        // For this simple version, we'll just set it to cancelled to remove it.
+        await ref.read(rideServiceProvider).updateRideStatus(ride.id, 'cancelled');
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ride Declined')));
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error declining: $e')));
+        }
+      }
+    }
   }
 
   Future<void> _acceptCourier(CourierModel courier) async {

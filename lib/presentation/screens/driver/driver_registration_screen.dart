@@ -212,8 +212,7 @@ class _DriverRegistrationScreenState extends ConsumerState<DriverRegistrationScr
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      // Validate Documents (Simulated check)
-      if (_licenseImage == null || _registrationImage == null || _insuranceImage == null) {
+      if (_licenseImage == null || _registrationImage == null || _insuranceImage == null || (widget.type != 'driver' && _permitImage == null)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please upload all required documents')),
         );
@@ -226,15 +225,32 @@ class _DriverRegistrationScreenState extends ConsumerState<DriverRegistrationScr
         final userId = ref.read(currentUserIdProvider);
         if (userId == null) throw Exception('User not logged in');
 
+        // Upload Documents
+        final storage = ref.read(storageServiceProvider);
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        
+        final licenseUrl = await storage.uploadDocument(userId, 'license_$timestamp', _licenseImage!);
+        final registrationUrl = await storage.uploadDocument(userId, 'registration_$timestamp', _registrationImage!);
+        final insuranceUrl = await storage.uploadDocument(userId, 'insurance_$timestamp', _insuranceImage!);
+        String? permitUrl;
+        
+        if (widget.type != 'driver' && _permitImage != null) {
+          permitUrl = await storage.uploadDocument(userId, 'permit_$timestamp', _permitImage!);
+        }
+
         final app = DriverApplicationModel(
           id: userId,
           fullName: _nameController.text.trim(),
           phoneNumber: _phoneController.text.trim(),
-          vehicleMake: _makeModelController.text.split(' ').first, // Simple split
+          vehicleMake: _makeModelController.text.split(' ').first,
           vehicleModel: _makeModelController.text,
           vehicleYear: _yearController.text.trim(),
           licensePlate: _plateController.text.trim(),
           createdAt: DateTime.now(),
+          licenseUrl: licenseUrl,
+          registrationUrl: registrationUrl,
+          insuranceUrl: insuranceUrl,
+          permitUrl: permitUrl,
         );
 
         await ref.read(databaseServiceProvider).submitDriverApplication(app);

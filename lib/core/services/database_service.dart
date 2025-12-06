@@ -92,7 +92,7 @@ class DatabaseService {
   }
 
   Future<void> updateCourierStatus(String courierId, String status, String riderId, {GeoPoint? driverLocation}) async {
-    final data = {
+    final Map<String, dynamic> data = {
       'status': status,
       'riderId': riderId,
     };

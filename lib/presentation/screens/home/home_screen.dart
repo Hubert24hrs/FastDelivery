@@ -76,17 +76,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             left: 24,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppTheme.surfaceColor,
                 shape: BoxShape.circle,
+                border: Border.all(color: Colors.white24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: Colors.black.withValues(alpha: 0.3),
                     blurRadius: 10,
                   ),
                 ],
               ),
               child: IconButton(
-                icon: const Icon(Icons.menu, color: Colors.black),
+                icon: const Icon(Icons.menu, color: Colors.white),
                 onPressed: () => _scaffoldKey.currentState?.openDrawer(),
               ),
             ),

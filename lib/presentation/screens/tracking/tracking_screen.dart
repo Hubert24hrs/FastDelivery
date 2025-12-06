@@ -1,5 +1,6 @@
 import 'package:fast_delivery/core/models/ride_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
+import 'package:fast_delivery/core/services/notification_service.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/foundation.dart';
@@ -28,14 +29,22 @@ class TrackingScreen extends ConsumerStatefulWidget {
 
 class _TrackingScreenState extends ConsumerState<TrackingScreen> {
   mapbox.MapboxMap? _mapboxMap;
-  mapbox.PointAnnotationManager? _pointAnnotationManager;
-  mapbox.PointAnnotation? _driverAnnotation;
+  mapbox.CircleAnnotationManager? _circleAnnotationManager;
+  mapbox.CircleAnnotation? _driverAnnotation;
   RideModel? _latestRide;
 
   _onMapCreated(mapbox.MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
-    _pointAnnotationManager = await mapboxMap.annotations.createPointAnnotationManager();
+    _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
     
+    // If we have a ride ID, start monitoring for notifications
+    if (widget.rideId != null) {
+      ref.read(rideServiceProvider).monitorRideForNotifications(
+        widget.rideId!,
+        ref.read(notificationServiceProvider),
+      ).listen((event) {}); // Just listen to trigger the side effects
+    }
+
     // Update marker if we already have data
     if (_latestRide != null) {
       _updateDriverMarker(_latestRide);
@@ -78,37 +87,28 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
   }
 
   Future<void> _updateDriverMarker(RideModel? ride) async {
-    if (ride?.driverLocation == null || _pointAnnotationManager == null) return;
-
+    if (ride == null || ride.driverLocation == null || _circleAnnotationManager == null) return;
+    
     final point = mapbox.Point(
       coordinates: mapbox.Position(
-        ride!.driverLocation!.longitude,
+        ride.driverLocation!.longitude,
         ride.driverLocation!.latitude,
       ),
     );
 
     if (_driverAnnotation == null) {
-      // Create new annotation
-      // Use a built-in icon or load an image. For now, let's try to load a simple car icon from assets if available, 
-      // or just use a default marker. Since we don't have a car asset confirmed, we'll use a default circle/marker.
-      // Actually, Mapbox default marker is fine, or we can try to use an image.
-      // Let's assume we don't have a custom icon ready and use a default one or just a circle.
-      // Wait, we can use `iconImage` if we add an image to the style.
-      // For simplicity, let's just create a point.
-      
-      _driverAnnotation = await _pointAnnotationManager?.create(
-        mapbox.PointAnnotationOptions(
+      _driverAnnotation = await _circleAnnotationManager?.create(
+        mapbox.CircleAnnotationOptions(
           geometry: point,
-          iconImage: 'car-15', // Mapbox default car icon if available, or we might need to load one.
-          // If 'car-15' doesn't exist, it might show nothing. Let's try to load an image from assets first?
-          // Or better, just use a simple circle for now if we can't guarantee the icon.
-          // Actually, let's skip iconImage and see if it shows a default marker.
+          circleColor: AppTheme.primaryColor.value,
+          circleRadius: 10.0,
+          circleStrokeColor: Colors.white.value,
+          circleStrokeWidth: 2.0,
         ),
       );
     } else {
-      // Update existing annotation
       _driverAnnotation?.geometry = point;
-      await _pointAnnotationManager?.update(_driverAnnotation!);
+      await _circleAnnotationManager?.update(_driverAnnotation!);
     }
   }
 
@@ -319,8 +319,14 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                                   onPressed: () async {
                                     final Uri launchUri = Uri(
                                       scheme: 'tel',
-                                      path: ride?.driverPhone ?? '08012345678',
+                                      path: ride?.driverPhone ?? '08012345678', // Fallback only if totally missing, but ideally we check null
                                     );
+                                    if (ride?.driverPhone == null) {
+                                       if (context.mounted) {
+                                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Driver number not found')));
+                                       }
+                                       return;
+                                    }
                                     if (await canLaunchUrl(launchUri)) {
                                       await launchUrl(launchUri);
                                     }

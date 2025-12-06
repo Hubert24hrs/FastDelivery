@@ -1,4 +1,5 @@
 import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:geocoding/geocoding.dart';
@@ -96,123 +97,136 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
-          onPressed: () => context.pop(),
+      extendBodyBehindAppBar: true, 
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppTheme.backgroundGradient,
         ),
-        title: const Text(
-          'Your route',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: Colors.black),
-            onPressed: _addStop,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Input Section
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Custom AppBar (since we want full control)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => context.pop(),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Your route',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add, color: Colors.white),
+                      onPressed: _addStop,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: Column(
-              children: [
-                // Pickup
-                _buildInputRow(
-                  controller: _pickupController,
-                  icon: Icons.my_location,
-                  iconColor: Colors.blue,
-                  hint: 'Pickup location',
-                  isReadOnly: true,
-                ),
-                const SizedBox(height: 12),
+              ),
 
-                // Stops
-                for (int i = 0; i < _stopControllers.length; i++) ...[
-                  _buildInputRow(
-                    controller: _stopControllers[i],
-                    icon: Icons.stop_circle_outlined,
-                    iconColor: Colors.orange,
-                    hint: 'Add stop',
-                    onRemove: () => _removeStop(i),
+              // Input Section
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: GlassCard(
+                  opacity: 0.1,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceColor.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: Column(
+                      children: [
+                        // Pickup
+                        _buildInputRow(
+                          controller: _pickupController,
+                          icon: Icons.my_location,
+                          iconColor: AppTheme.secondaryColor,
+                          hint: 'Pickup location',
+                          isReadOnly: true,
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Stops
+                        for (int i = 0; i < _stopControllers.length; i++) ...[
+                          _buildInputRow(
+                            controller: _stopControllers[i],
+                            icon: Icons.stop_circle_outlined,
+                            iconColor: Colors.orange,
+                            hint: 'Add stop',
+                            onRemove: () => _removeStop(i),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+
+                        // Dropoff
+                        _buildInputRow(
+                          controller: _dropoffController,
+                          icon: Icons.location_on_outlined,
+                          iconColor: AppTheme.primaryColor,
+                          hint: 'Dropoff location',
+                          autofocus: true,
+                          isLoading: _isLoading,
+                          onSubmitted: (value) {
+                            if (value.isNotEmpty) {
+                              _selectDestination(value);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                ],
+                ),
+              ),
 
-                // Dropoff
-                _buildInputRow(
-                  controller: _dropoffController,
-                  icon: Icons.location_on_outlined,
-                  iconColor: Colors.red,
-                  hint: 'Dropoff location',
-                  autofocus: true,
-                  isLoading: _isLoading,
-                  onSubmitted: (value) {
-                    if (value.isNotEmpty) {
-                      _selectDestination(value);
-                    }
-                  },
+              // Recent Places List
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  children: [
+                    _buildRecentPlace(
+                      'First Bank Lekki',
+                      '3 Chris Efunyemi Onanuga Street, Lekki',
+                      '3 km',
+                    ),
+                    _buildRecentPlace(
+                      '15 Nike Art Gallery Road',
+                      'Lagos, Nigeria',
+                      '< 1 km',
+                    ),
+                    _buildRecentPlace(
+                      'Murtala Muhammed Airport',
+                      '1 Airport Road, Ikeja',
+                      '24.4 km',
+                      icon: Icons.local_airport,
+                    ),
+                    _buildRecentPlace(
+                      'Eko Hotel',
+                      '1415 Adetokunbo Ademola Street',
+                      '6.2 km',
+                    ),
+                    _buildRecentPlace(
+                      'Lekki Phase One',
+                      'Lekki, Lagos',
+                      '2.1 km',
+                      icon: Icons.shopping_bag_outlined,
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-
-          // Recent Places List
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              children: [
-                _buildRecentPlace(
-                  'First Bank Lekki',
-                  '3 Chris Efunyemi Onanuga Street, Lekki',
-                  '3 km',
-                ),
-                _buildRecentPlace(
-                  '15 Nike Art Gallery Road',
-                  'Lagos, Nigeria',
-                  '< 1 km',
-                ),
-                _buildRecentPlace(
-                  'Murtala Muhammed Airport',
-                  '1 Airport Road, Ikeja',
-                  '24.4 km',
-                  icon: Icons.local_airport,
-                ),
-                _buildRecentPlace(
-                  'Eko Hotel',
-                  '1415 Adetokunbo Ademola Street',
-                  '6.2 km',
-                ),
-                _buildRecentPlace(
-                  'Lekki Phase One',
-                  'Lekki, Lagos',
-                  '2.1 km',
-                  icon: Icons.shopping_bag_outlined,
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -236,7 +250,7 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: TextField(
@@ -244,10 +258,10 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
               readOnly: isReadOnly,
               autofocus: autofocus,
               onSubmitted: onSubmitted,
-              style: const TextStyle(color: Colors.black87),
+              style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: TextStyle(color: Colors.grey[500]),
+                hintStyle: TextStyle(color: Colors.white38),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
                 suffixIcon: isLoading
@@ -258,13 +272,13 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
                           child: SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor),
                           ),
                         ),
                       )
                     : (onRemove != null
                         ? IconButton(
-                            icon: const Icon(Icons.close, size: 18, color: Colors.grey),
+                            icon: const Icon(Icons.close, size: 18, color: Colors.white54),
                             onPressed: onRemove,
                           )
                         : null),
@@ -274,7 +288,7 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
         ),
         if (onRemove == null) ...[
           const SizedBox(width: 8),
-          const Icon(Icons.add, color: Colors.black54, size: 24),
+          const Icon(Icons.add, color: Colors.white54, size: 24),
         ],
       ],
     );
@@ -283,20 +297,20 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
   Widget _buildRecentPlace(String title, String subtitle, String distance, {IconData icon = Icons.access_time}) {
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: Colors.grey[200],
-        child: Icon(icon, color: Colors.black54, size: 20),
+        backgroundColor: Colors.white10,
+        child: Icon(icon, color: Colors.white70, size: 20),
       ),
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
+        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
       ),
       subtitle: Text(
         subtitle,
-        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+        style: const TextStyle(color: Colors.white54, fontSize: 12),
       ),
       trailing: Text(
         distance,
-        style: TextStyle(color: Colors.grey[500], fontSize: 12),
+        style: const TextStyle(color: Colors.white38, fontSize: 12),
       ),
       onTap: () => _selectDestination(title),
     );

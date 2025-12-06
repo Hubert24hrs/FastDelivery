@@ -1,0 +1,175 @@
+import 'package:fast_delivery/core/providers/providers.dart';
+import 'package:fast_delivery/core/services/auth_service.dart';
+import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/core/utils/router_utils.dart';
+import 'package:fast_delivery/presentation/screens/admin/admin_dashboard_screen.dart';
+import 'package:fast_delivery/presentation/screens/auth/login_screen.dart';
+import 'package:fast_delivery/presentation/screens/booking/destination_search_screen.dart';
+import 'package:fast_delivery/presentation/screens/chat/chat_screen.dart';
+import 'package:fast_delivery/presentation/screens/courier/courier_screen.dart';
+import 'package:fast_delivery/presentation/screens/driver/driver_dashboard_screen.dart';
+import 'package:fast_delivery/presentation/screens/driver/driver_mode_selection_screen.dart';
+import 'package:fast_delivery/presentation/screens/driver/driver_navigation_screen.dart';
+import 'package:fast_delivery/presentation/screens/driver/driver_pending_screen.dart';
+import 'package:fast_delivery/presentation/screens/driver/driver_registration_screen.dart';
+import 'package:fast_delivery/presentation/screens/history/history_details_screen.dart';
+import 'package:fast_delivery/presentation/screens/history/history_screen.dart';
+import 'package:fast_delivery/presentation/screens/home/home_screen.dart';
+import 'package:fast_delivery/presentation/screens/map/map_screen.dart';
+import 'package:fast_delivery/presentation/screens/profile/profile_screen.dart';
+import 'package:fast_delivery/presentation/screens/settings/settings_screen.dart';
+import 'package:fast_delivery/presentation/screens/splash/splash_screen.dart';
+import 'package:fast_delivery/presentation/screens/tracking/tracking_screen.dart';
+import 'package:fast_delivery/presentation/screens/wallet/add_card_screen.dart';
+import 'package:fast_delivery/presentation/screens/wallet/transaction_history_screen.dart';
+import 'package:fast_delivery/presentation/screens/wallet/wallet_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+final routerProvider = Provider<GoRouter>((ref) {
+  final authState = ref.watch(authStateProvider);
+
+  return GoRouter(
+    initialLocation: '/splash',
+    refreshListenable: authState.isLoading ? null : GoRouterRefreshStream(ref.watch(authServiceProvider).authStateChanges),
+    redirect: (context, state) {
+      if (authState.isLoading || authState.hasError) return null;
+
+      final isLoggedIn = authState.value != null;
+      final isLoggingIn = state.uri.path == '/login';
+      final isSplash = state.uri.path == '/splash';
+
+      if (isSplash) {
+        return null; // Let splash handle its own navigation
+      }
+
+      if (!isLoggedIn && !isLoggingIn) {
+        return '/login';
+      }
+
+      if (isLoggedIn && isLoggingIn) {
+        return '/';
+      }
+
+      return null;
+    },
+    routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/login',
+        builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/map',
+        builder: (context, state) => const MapScreen(),
+      ),
+      GoRoute(
+        path: '/courier',
+        builder: (context, state) => const CourierScreen(),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/wallet',
+        builder: (context, state) => const WalletScreen(),
+        routes: [
+          GoRoute(
+            path: 'add-card',
+            builder: (context, state) => const AddCardScreen(),
+          ),
+          GoRoute(
+            path: 'transactions',
+            builder: (context, state) => const TransactionHistoryScreen(),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/driver-selection',
+        builder: (context, state) => const DriverModeSelectionScreen(),
+      ),
+      GoRoute(
+        path: '/driver-registration',
+        builder: (context, state) {
+          final type = state.uri.queryParameters['type'] ?? 'driver';
+          return DriverRegistrationScreen(type: type);
+        },
+      ),
+      GoRoute(
+        path: '/driver-pending',
+        builder: (context, state) => const DriverPendingScreen(),
+      ),
+      GoRoute(
+        path: '/driver',
+        builder: (context, state) => const DriverDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/tracking',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return TrackingScreen(
+            destinationName: extra?['destinationName'],
+            destinationLocation: extra?['destinationLocation'],
+            rideId: extra?['rideId'],
+          );
+        },
+      ),
+      GoRoute(
+        path: '/admin',
+        builder: (context, state) => const AdminDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/chat',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return ChatScreen(
+            rideId: extra['rideId'],
+            otherUserName: extra['otherUserName'],
+          );
+        },
+      ),
+      GoRoute(
+        path: '/destination-search',
+        builder: (context, state) => const DestinationSearchScreen(),
+      ),
+      GoRoute(
+        path: '/driver-navigation',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return DriverNavigationScreen(
+            ride: extra?['ride'],
+            courier: extra?['courier'],
+          );
+        },
+      ),
+      GoRoute(
+        path: '/history',
+        builder: (context, state) => const HistoryScreen(),
+        routes: [
+          GoRoute(
+            path: 'details',
+            builder: (context, state) {
+              final extra = state.extra as Map<String, dynamic>?;
+              return HistoryDetailsScreen(
+                ride: extra?['ride'],
+                courier: extra?['courier'],
+              );
+            },
+          ),
+        ],
+      ),
+    ],
+  );
+});

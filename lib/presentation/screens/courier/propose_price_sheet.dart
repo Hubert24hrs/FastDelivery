@@ -1,3 +1,4 @@
+import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -36,9 +37,10 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border.all(color: Colors.white10),
       ),
       child: SingleChildScrollView(
         child: Padding(
@@ -56,11 +58,11 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Colors.white,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.black54),
+                    icon: const Icon(Icons.close, color: Colors.white54),
                     onPressed: () => context.pop(),
                   ),
                 ],
@@ -76,18 +78,18 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
                   style: const TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: Colors.white,
                   ),
                   decoration: const InputDecoration(
                     prefixText: 'NGN ',
                     prefixStyle: TextStyle(
                       fontSize: 48,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey,
+                      color: Colors.white38,
                     ),
                     border: InputBorder.none,
                     hintText: '0',
-                    hintStyle: TextStyle(color: Colors.grey),
+                    hintStyle: TextStyle(color: Colors.white12),
                   ),
                 ),
               ),
@@ -98,28 +100,30 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[100],
+                  color: Colors.black.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white10),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.money, color: Colors.green),
+                    const Icon(Icons.money, color: AppTheme.primaryColor),
                     const SizedBox(width: 12),
                     Text(
                       _paymentMethod,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: Colors.white,
                       ),
                     ),
                     const Spacer(),
                     PopupMenuButton<String>(
-                      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black),
+                      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                      color: AppTheme.surfaceColor,
                       onSelected: (value) => setState(() => _paymentMethod = value),
                       itemBuilder: (context) => [
-                        const PopupMenuItem(value: 'Cash', child: Text('Cash')),
-                        const PopupMenuItem(value: 'Transfer', child: Text('Transfer')),
+                        const PopupMenuItem(value: 'Cash', child: Text('Cash', style: TextStyle(color: Colors.white))),
+                        const PopupMenuItem(value: 'Transfer', child: Text('Transfer', style: TextStyle(color: Colors.white))),
                       ],
                     ),
                   ],
@@ -140,14 +144,14 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                          color: Colors.white,
                         ),
                       ),
                       Text(
                         'To courier, when package arrives',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey,
+                          color: Colors.white54,
                         ),
                       ),
                     ],
@@ -155,7 +159,7 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
                   CupertinoSwitch(
                     value: _receiverPays,
                     onChanged: (value) => setState(() => _receiverPays = value),
-                    activeColor: const Color(0xFFCCFF00),
+                    activeColor: AppTheme.primaryColor,
                   ),
                 ],
               ),
@@ -169,7 +173,7 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
                 child: ElevatedButton(
                   onPressed: _handleSave,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFCCFF00), // Lime green
+                    backgroundColor: AppTheme.primaryColor, // Lime green
                     foregroundColor: Colors.black,
                     elevation: 0,
                     shape: RoundedRectangleBorder(

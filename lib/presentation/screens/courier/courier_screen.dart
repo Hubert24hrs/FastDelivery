@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fast_delivery/core/models/courier_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
+import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/common/glass_card.dart';
 
 import 'package:fast_delivery/presentation/screens/courier/package_details_sheet.dart';
 import 'package:fast_delivery/presentation/screens/courier/propose_price_sheet.dart';
@@ -146,14 +148,13 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Map Background Placeholder (Simulating the map behind)
+          // Global Gradient
           Container(
-            color: Colors.grey[200],
-            child: const Center(
-              child: Text('Map View Placeholder', style: TextStyle(color: Colors.grey)),
+            decoration: const BoxDecoration(
+              gradient: AppTheme.backgroundGradient,
             ),
           ),
           
@@ -162,9 +163,9 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
             top: 50,
             left: 20,
             child: CircleAvatar(
-              backgroundColor: Colors.white,
+              backgroundColor: AppTheme.surfaceColor,
               child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
                 onPressed: () => context.go('/'),
               ),
             ),
@@ -173,144 +174,142 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
           // Main Content Sheet
           Align(
             alignment: Alignment.bottomCenter,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 10,
-                    offset: Offset(0, -5),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Courier delivery',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+            child: GlassCard(
+              opacity: 0.95,
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceColor.withValues(alpha: 0.95),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  border: Border.all(color: Colors.white10),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Courier delivery',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Vehicle Selection
-                  Row(
-                    children: [
-                      _buildVehicleOption('Car', Icons.directions_car),
-                      const SizedBox(width: 12),
-                      _buildVehicleOption('Motorcycle', Icons.two_wheeler),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 16),
+                    
+                    // Vehicle Selection
+                    Row(
+                      children: [
+                        _buildVehicleOption('Car', Icons.directions_car),
+                        const SizedBox(width: 12),
+                        _buildVehicleOption('Motorcycle', Icons.two_wheeler),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
 
-                  // Current Location Display
-                  Row(
-                    children: [
-                      const Icon(Icons.my_location, color: Colors.green, size: 20),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Prince Samuel Adedoyin St 2', // Mock current location
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w500,
+                    // Current Location Display
+                    Row(
+                      children: [
+                        const Icon(Icons.my_location, color: AppTheme.primaryColor, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Prince Samuel Adedoyin St 2', // Mock current location
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // To Input with Add Stops
-                  GestureDetector(
-                    onTap: _openRouteEntry,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.search, color: Colors.black54),
-                          const SizedBox(width: 12),
-                          Text(
-                            _dropoffAddress.isEmpty ? 'To' : _dropoffAddress,
-                            style: TextStyle(
-                              color: _dropoffAddress.isEmpty ? Colors.black54 : Colors.black,
-                              fontSize: 16,
-                              fontWeight: _dropoffAddress.isEmpty ? FontWeight.normal : FontWeight.bold,
-                            ),
-                          ),
-                          const Spacer(),
-                          const Text(
-                            'Add stops',
-                            style: TextStyle(
-                              color: Colors.black54,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.add, color: Colors.black54, size: 20),
-                        ],
-                      ),
+                      ],
                     ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Order Details
-                  _buildListTile(
-                    'Package details', 
-                    Icons.tune, 
-                    onTap: _openPackageDetails,
-                    subtitle: _packageDetails != null ? 'Details added' : null,
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Offer your fare
-                  _buildListTile(
-                    'Propose your price', 
-                    Icons.money,
-                    onTap: _openProposePrice,
-                    subtitle: _price > 0 ? '₦${_price.toStringAsFixed(0)}' : null,
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Action Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _requestCourier,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFCCFF00), // Lime green
-                        foregroundColor: Colors.black,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
+                    const SizedBox(height: 16),
+
+                    // To Input with Add Stops
+                    GestureDetector(
+                      onTap: _openRouteEntry,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white10,
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.search, color: Colors.white54),
+                            const SizedBox(width: 12),
+                            Text(
+                              _dropoffAddress.isEmpty ? 'To' : _dropoffAddress,
+                              style: TextStyle(
+                                color: _dropoffAddress.isEmpty ? Colors.white54 : Colors.white,
+                                fontSize: 16,
+                                fontWeight: _dropoffAddress.isEmpty ? FontWeight.normal : FontWeight.bold,
+                              ),
+                            ),
+                            const Spacer(),
+                            const Text(
+                              'Add stops',
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.add, color: Colors.white54, size: 20),
+                          ],
                         ),
                       ),
-                      child: _isLoading 
-                        ? const CircularProgressIndicator(color: Colors.black) 
-                        : const Text(
-                            'Find a courier',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
                     ),
-                  ),
-                ],
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Order Details
+                    _buildListTile(
+                      'Package details', 
+                      Icons.tune, 
+                      onTap: _openPackageDetails,
+                      subtitle: _packageDetails != null ? 'Details added' : null,
+                    ),
+                    const SizedBox(height: 8),
+                    
+                    // Offer your fare
+                    _buildListTile(
+                      'Propose your price', 
+                      Icons.money,
+                      onTap: _openProposePrice,
+                      subtitle: _price > 0 ? '₦${_price.toStringAsFixed(0)}' : null,
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Action Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _requestCourier,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor, // Neon Green
+                          foregroundColor: Colors.black,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _isLoading 
+                          ? const CircularProgressIndicator(color: Colors.black) 
+                          : const Text(
+                              'Find a courier',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -326,7 +325,7 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFEEFFCC) : Colors.grey[100],
+          color: isSelected ? AppTheme.primaryColor : Colors.white10,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -334,13 +333,13 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
             Icon(
               icon, 
               size: 18,
-              color: Colors.black,
+              color: isSelected ? Colors.black : Colors.white,
             ),
             const SizedBox(width: 6),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.black,
+              style: TextStyle(
+                color: isSelected ? Colors.black : Colors.white,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -356,12 +355,12 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.grey[50],
+          color: Colors.white10,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
           children: [
-            Icon(icon, color: Colors.black87, size: 20),
+            Icon(icon, color: Colors.white70, size: 20),
             const SizedBox(width: 12),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,7 +368,7 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: Colors.black87,
+                    color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -378,7 +377,7 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
                   Text(
                     subtitle,
                     style: const TextStyle(
-                      color: Colors.green,
+                      color: AppTheme.primaryColor,
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -386,7 +385,7 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
               ],
             ),
             const Spacer(),
-            const Icon(Icons.chevron_right, color: Colors.black54),
+            const Icon(Icons.chevron_right, color: Colors.white54),
           ],
         ),
       ),

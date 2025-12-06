@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fast_delivery/core/models/ride_model.dart';
+import 'package:fast_delivery/core/services/notification_service.dart';
 
 class RideService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -97,5 +99,64 @@ class RideService {
       print('Error getting active driver ride: $e');
     }
     return null;
+  }
+  // Listen to ride updates and trigger notifications (Client-Side Logic)
+  // call this when a user has an active ride
+  Stream<RideModel> monitorRideForNotifications(String rideId, NotificationService notificationService) {
+    String? lastStatus;
+    
+    return _ridesCollection.doc(rideId).snapshots().map((doc) {
+      if (!doc.exists) throw Exception('Ride not found');
+      
+      final ride = RideModel.fromMap(doc.data()!, doc.id);
+      
+      // Check for status changes
+      if (lastStatus != null && lastStatus != ride.status) {
+         _triggerNotificationForStatus(ride.status, notificationService);
+      }
+      lastStatus = ride.status; // Update tracker
+      
+      return ride;
+    });
+  }
+
+  void _triggerNotificationForStatus(String status, NotificationService notificationService) {
+    switch (status) {
+      case 'accepted':
+        notificationService.showLocalNotification(
+          title: 'Driver Found!',
+          body: 'A driver has accepted your request.',
+          payload: json.encode({'type': 'ride_update', 'status': status}),
+        );
+        break;
+      case 'arrived':
+        notificationService.showLocalNotification(
+          title: 'Driver Arrived',
+          body: 'Your driver is waiting at the pickup location.',
+          payload: json.encode({'type': 'ride_update', 'status': status}),
+        );
+        break;
+      case 'in_progress':
+        notificationService.showLocalNotification(
+          title: 'Ride Started',
+          body: 'You are on your way to the destination.',
+          payload: json.encode({'type': 'ride_update', 'status': status}),
+        );
+        break;
+      case 'completed':
+         notificationService.showLocalNotification(
+          title: 'Ride Completed',
+          body: 'You have arrived safely. Thank you for riding with us!',
+          payload: json.encode({'type': 'ride_update', 'status': status}),
+        );
+        break;
+       case 'cancelled':
+         notificationService.showLocalNotification(
+          title: 'Ride Cancelled',
+          body: 'The ride was cancelled.',
+          payload: json.encode({'type': 'ride_update', 'status': status}),
+        );
+        break;
+    }
   }
 }

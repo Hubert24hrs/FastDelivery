@@ -1,13 +1,5 @@
-
 import 'dart:ui';
-import 'package:fast_delivery/presentation/common/glass_card.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-
-import 'dart:ui';
+import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/models/user_model.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
@@ -107,40 +99,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.transparent,
       body: Stack(
         children: [
+          // 0. Global Gradient
+          Container(decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient)),
+
           // 1. Animated Background Orbs
-          const Positioned(
+          Positioned(
             top: -100,
             left: -100,
-            child: _AnimatedOrb(color: Color(0xFFCCFF00), size: 300),
+            child: _AnimatedOrb(color: AppTheme.primaryColor, size: 300),
           ),
           const Positioned(
             bottom: -50,
             right: -50,
-            child: _AnimatedOrb(color: Colors.cyanAccent, size: 250),
+            child: _AnimatedOrb(color: AppTheme.secondaryColor, size: 250),
           ),
           const Positioned(
             top: 200,
             right: -100,
-            child: _AnimatedOrb(color: Colors.purpleAccent, size: 200),
+            child: _AnimatedOrb(color: Colors.white, size: 200),
           ),
 
           // 2. Blur Overlay
           Positioned.fill(
             child: Container(
-              color: Colors.black.withValues(alpha: 0.3),
+              color: Colors.black.withValues(alpha: 0.1),
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Colors.black.withValues(alpha: 0.7),
-                        Colors.black.withValues(alpha: 0.5),
+                        Colors.black.withValues(alpha: 0.4),
+                        Colors.black.withValues(alpha: 0.2),
                       ],
                     ),
                   ),
@@ -160,7 +155,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   
                   // Login Card
                   GlassCard(
-                    opacity: 0.05,
+                    opacity: 0.1,
                     child: Padding(
                       padding: const EdgeInsets.all(32),
                       child: Column(
@@ -213,11 +208,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _submit,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFCCFF00),
-                                disabledBackgroundColor: const Color(0xFFCCFF00).withOpacity(0.5),
+                                backgroundColor: AppTheme.primaryColor,
+                                disabledBackgroundColor: AppTheme.primaryColor.withOpacity(0.5),
                                 foregroundColor: Colors.black,
                                 elevation: 20,
-                                shadowColor: const Color(0xFFCCFF00).withValues(alpha: 0.5),
+                                shadowColor: AppTheme.primaryColor.withValues(alpha: 0.5),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),

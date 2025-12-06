@@ -19,12 +19,15 @@ class RideModel {
   final String status; // 'pending', 'accepted', 'ongoing', 'completed', 'cancelled'
   final DateTime createdAt;
 
+  final String? userPhone; // Contact for the passenger
+
   final List<String> stops;
   final List<GeoPoint> stopLocations;
 
   RideModel({
     required this.id,
     required this.userId,
+    this.userPhone,
     this.driverId,
     this.driverName,
     this.driverPhone,
@@ -47,6 +50,7 @@ class RideModel {
     return RideModel(
       id: id,
       userId: data['userId'] ?? '',
+      userPhone: data['userPhone'],
       driverId: data['driverId'],
       driverName: data['driverName'],
       driverPhone: data['driverPhone'],
@@ -69,6 +73,7 @@ class RideModel {
   Map<String, dynamic> toMap() {
     return {
       'userId': userId,
+      'userPhone': userPhone,
       'driverId': driverId,
       'driverName': driverName,
       'driverPhone': driverPhone,

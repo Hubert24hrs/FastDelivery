@@ -1,4 +1,4 @@
-
+import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -28,9 +28,10 @@ class _RouteEntrySheetState extends State<RouteEntrySheet> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.9,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border.all(color: Colors.white10),
       ),
       child: Column(
         children: [
@@ -46,17 +47,17 @@ class _RouteEntrySheetState extends State<RouteEntrySheet> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: Colors.white,
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.black54),
+                  icon: const Icon(Icons.close, color: Colors.white54),
                   onPressed: () => context.pop(),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1),
+          const Divider(height: 1, color: Colors.white12),
           
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -67,18 +68,19 @@ class _RouteEntrySheetState extends State<RouteEntrySheet> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: Colors.black.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white10),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.my_location, color: Colors.green, size: 20),
+                      const Icon(Icons.my_location, color: AppTheme.primaryColor, size: 20),
                       const SizedBox(width: 12),
-                      Expanded(
+                      const Expanded(
                         child: Text(
                           'Current Location',
                           style: TextStyle(
-                            color: Colors.grey[800],
+                            color: Colors.white70,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -91,23 +93,23 @@ class _RouteEntrySheetState extends State<RouteEntrySheet> {
                 // To Input
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Colors.black.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.black),
+                    border: Border.all(color: AppTheme.primaryColor),
                   ),
                   child: Row(
                     children: [
                       const SizedBox(width: 12),
-                      const Icon(Icons.search, color: Colors.black),
+                      const Icon(Icons.search, color: Colors.white),
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
                           controller: _toController,
                           autofocus: true,
-                          style: const TextStyle(color: Colors.black),
+                          style: const TextStyle(color: Colors.white),
                           decoration: const InputDecoration(
                             hintText: 'To',
-                            hintStyle: TextStyle(color: Colors.grey),
+                            hintStyle: TextStyle(color: Colors.white38),
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(vertical: 14),
                           ),
@@ -125,10 +127,10 @@ class _RouteEntrySheetState extends State<RouteEntrySheet> {
                   onPressed: () {
                     // TODO: Implement map picker
                   },
-                  icon: const Icon(Icons.map_outlined, color: Colors.blue),
+                  icon: const Icon(Icons.map_outlined, color: AppTheme.secondaryColor),
                   label: const Text(
                     'Choose on map',
-                    style: TextStyle(color: Colors.blue, fontSize: 16),
+                    style: TextStyle(color: AppTheme.secondaryColor, fontSize: 16),
                   ),
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
@@ -145,8 +147,8 @@ class _RouteEntrySheetState extends State<RouteEntrySheet> {
                   child: ElevatedButton(
                     onPressed: _handleSave,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

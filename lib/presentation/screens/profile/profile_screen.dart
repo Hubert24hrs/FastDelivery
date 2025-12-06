@@ -1,11 +1,15 @@
 
+import 'dart:io';
+
 import 'package:fast_delivery/core/models/user_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -16,6 +20,10 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isEditing = false;
+  bool _isLoading = false;
+  File? _imageFile;
+  final ImagePicker _picker = ImagePicker();
+
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _emailController;
@@ -50,14 +58,38 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  Future<void> _saveProfile(UserModel currentUser) async {
+  Future<void> _pickImage() async {
+    if (!_isEditing) return;
     try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        setState(() => _imageFile = File(image.path));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to pick image')),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveProfile(UserModel currentUser) async {
+    setState(() => _isLoading = true);
+    try {
+      String? photoUrl = currentUser.photoUrl;
+
+      // Upload Photo if changed
+      if (_imageFile != null) {
+        photoUrl = await ref.read(storageServiceProvider).uploadProfilePhoto(currentUser.id, _imageFile!);
+      }
+
       final updatedUser = UserModel(
         id: currentUser.id,
-        email: currentUser.email, // Email usually shouldn't change here
+        email: currentUser.email,
         displayName: _nameController.text.trim(),
         phoneNumber: _phoneController.text.trim(),
-        photoUrl: currentUser.photoUrl,
+        photoUrl: photoUrl,
         role: currentUser.role,
         walletBalance: currentUser.walletBalance,
         homeAddress: currentUser.homeAddress,
@@ -69,16 +101,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile Updated')),
+          const SnackBar(content: Text('Profile Updated', style: TextStyle(color: Colors.white))),
         );
-        setState(() => _isEditing = false);
+        setState(() {
+          _isEditing = false;
+          _imageFile = null;
+        });
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating profile: $e')),
+          SnackBar(content: Text('Error updating profile: $e', style: const TextStyle(color: Colors.white))),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -101,13 +138,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${type == 'home' ? 'Home' : 'Work'} address updated')),
+          SnackBar(content: Text('${type == 'home' ? 'Home' : 'Work'} address updated', style: const TextStyle(color: Colors.white))),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating address: $e')),
+          SnackBar(content: Text('Error updating address: $e', style: const TextStyle(color: Colors.white))),
         );
       }
     }
@@ -121,25 +158,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Enter ${type == 'home' ? 'Home' : 'Work'} Location'),
+        backgroundColor: AppTheme.surfaceColor,
+        title: Text('Enter ${type == 'home' ? 'Home' : 'Work'} Location', style: const TextStyle(color: Colors.white)),
         content: TextField(
           controller: controller,
+          style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: 'e.g., 123 Main St, Lagos',
+            hintStyle: const TextStyle(color: Colors.white54),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
           ),
           TextButton(
             onPressed: () {
               _updateAddress(user, type, controller.text.trim());
               Navigator.pop(context);
             },
-            child: const Text('Save'),
+            child: const Text('Save', style: TextStyle(color: AppTheme.primaryColor)),
           ),
         ],
       ),
@@ -149,7 +189,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _logout() async {
     try {
       await ref.read(authServiceProvider).signOut();
-      // Router will handle redirect to login
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -170,7 +209,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       stream: userAsync,
       builder: (context, snapshot) {
         if (!snapshot.hasData && snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(body: Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)));
         }
 
         final user = snapshot.data;
@@ -178,184 +217,227 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           return const Scaffold(body: Center(child: Text('User not found')));
         }
 
-        // Initialize controllers with user data if not editing
         _initializeControllers(user);
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          extendBodyBehindAppBar: true,
           appBar: AppBar(
-            backgroundColor: Colors.white,
+            backgroundColor: Colors.transparent,
             elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black),
-              onPressed: () => context.pop(),
+            leading: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: GlassCard(
+                borderRadius: 50,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => context.pop(),
+                ),
+              ),
             ),
             actions: [
               TextButton(
-                onPressed: () {
+                onPressed: _isLoading ? null : () {
                   if (_isEditing) {
                     _saveProfile(user);
                   } else {
                     setState(() => _isEditing = true);
                   }
                 },
-                child: Text(
-                  _isEditing ? 'Done' : 'Edit',
-                  style: const TextStyle(
-                    color: AppTheme.primaryColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+                child: _isLoading 
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor))
+                    : Text(
+                        _isEditing ? 'Done' : 'Edit',
+                        style: const TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 16),
             ],
           ),
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                const SizedBox(height: 10),
-                // Profile Header
-                Center(
-                  child: Column(
-                    children: [
-                      Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Colors.grey[200],
-                            child: const Icon(Icons.person, size: 50, color: Colors.grey),
-                          ),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: GestureDetector(
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Image Picker not implemented')),
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: const BoxDecoration(
-                                  color: AppTheme.primaryColor,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.camera_alt, color: Colors.black, size: 20),
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: AppTheme.backgroundGradient,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(top: 100),
+              child: Column(
+                children: [
+                  // Profile Header
+                  Center(
+                    child: Column(
+                      children: [
+                        Stack(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppTheme.primaryColor, width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                                    blurRadius: 20,
+                                    spreadRadius: 5,
+                                  ),
+                                ],
+                              ),
+                              child: CircleAvatar(
+                                radius: 60,
+                                backgroundColor: Colors.white10,
+                                backgroundImage: _imageFile != null 
+                                    ? FileImage(_imageFile!) as ImageProvider
+                                    : (user.photoUrl != null ? NetworkImage(user.photoUrl!) : null),
+                                child: (_imageFile == null && user.photoUrl == null)
+                                    ? const Icon(Icons.person, size: 60, color: Colors.white54)
+                                    : null,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (_isEditing)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 40),
-                          child: TextField(
-                            controller: _nameController,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                            decoration: const InputDecoration(
-                              border: UnderlineInputBorder(),
-                              hintText: 'Enter Name',
-                            ),
-                          ),
-                        )
-                      else
-                        Text(
-                          user.displayName?.isNotEmpty == true ? user.displayName! : 'No Name',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
+                            if (_isEditing)
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: GestureDetector(
+                                  onTap: _pickImage,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: const BoxDecoration(
+                                      color: AppTheme.primaryColor,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.camera_alt, color: Colors.black, size: 20),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                    ],
-                  ),
-                ).animate().fadeIn().slideY(begin: 0.2, end: 0),
+                        const SizedBox(height: 24),
+                        if (_isEditing)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 60),
+                            child: TextField(
+                              controller: _nameController,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              decoration: const InputDecoration(
+                                border: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.primaryColor)),
+                                hintText: 'Enter Name',
+                                hintStyle: TextStyle(color: Colors.white24),
+                              ),
+                            ),
+                          )
+                        else
+                          Text(
+                            user.displayName?.isNotEmpty == true ? user.displayName! : 'No Name',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            user.email,
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 14,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ).animate().fadeIn().slideY(begin: 0.2, end: 0),
 
-                const SizedBox(height: 32),
+                  const SizedBox(height: 48),
 
-                // Info Fields
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      _buildInfoField(Icons.phone, 'Phone', _phoneController, enabled: _isEditing),
-                      const SizedBox(height: 16),
-                      _buildInfoField(Icons.email, 'Email', _emailController, enabled: false), // Email not editable
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                // Settings List
-                _buildSettingsItem(Icons.shield_outlined, 'Safety'),
-                _buildSettingsItem(Icons.lock_outline, 'Login & security'),
-                _buildSettingsItem(Icons.handshake_outlined, 'Privacy'),
-
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Divider(),
-                ),
-
-                // Saved Places
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Saved places',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                  // Info Fields
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: GlassCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          children: [
+                            _buildInfoField(Icons.phone, 'Phone Number', _phoneController, enabled: _isEditing),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ).animate().fadeIn(delay: 400.ms),
-                
-                const SizedBox(height: 8),
 
-                _buildSettingsItem(
-                  Icons.home_outlined, 
-                  user.homeAddress?.isNotEmpty == true ? user.homeAddress! : 'Enter home location',
-                  subtitle: user.homeAddress?.isNotEmpty == true ? 'Home' : null,
-                  onTap: () => _showAddressDialog(user, 'home'),
-                ),
-                _buildSettingsItem(
-                  Icons.work_outline, 
-                  user.workAddress?.isNotEmpty == true ? user.workAddress! : 'Enter work location',
-                  subtitle: user.workAddress?.isNotEmpty == true ? 'Work' : null,
-                  onTap: () => _showAddressDialog(user, 'work'),
-                ),
-                _buildSettingsItem(Icons.add, 'Add a place'),
+                  const SizedBox(height: 24),
 
-                const SizedBox(height: 40),
-                
-                // Logout Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: _logout,
-                      icon: const Icon(Icons.logout, color: Colors.red),
-                      label: const Text('Log Out', style: TextStyle(color: Colors.red)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                  // Saved Places
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: const Text(
+                        'SAVED PLACES',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryColor,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ),
+                  ).animate().fadeIn(delay: 200.ms),
+                  
+                  const SizedBox(height: 16),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        _buildSettingsItem(
+                          Icons.home, 
+                          user.homeAddress?.isNotEmpty == true ? user.homeAddress! : 'Set Home Address',
+                          subtitle: 'Home',
+                          isSet: user.homeAddress?.isNotEmpty == true,
+                          onTap: () => _showAddressDialog(user, 'home'),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildSettingsItem(
+                          Icons.work, 
+                          user.workAddress?.isNotEmpty == true ? user.workAddress! : 'Set Work Address',
+                          subtitle: 'Work',
+                          isSet: user.workAddress?.isNotEmpty == true,
+                          onTap: () => _showAddressDialog(user, 'work'),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 48),
+                  
+                  // Logout Button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _logout,
+                        icon: const Icon(Icons.logout, color: Colors.redAccent),
+                        label: const Text('LOG OUT', style: TextStyle(color: Colors.redAccent, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.redAccent, width: 1.5),
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 40),
-              ],
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         );
@@ -366,30 +448,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _buildInfoField(IconData icon, String label, TextEditingController controller, {required bool enabled}) {
     return Row(
       children: [
-        Icon(icon, color: Colors.grey, size: 24),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white10,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: AppTheme.primaryColor, size: 20),
+        ),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              Text(label, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+              const SizedBox(height: 4),
               if (enabled)
                 TextField(
                   controller: controller,
-                  style: const TextStyle(fontSize: 16, color: Colors.black),
+                  style: const TextStyle(fontSize: 16, color: Colors.white),
                   decoration: const InputDecoration(
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(vertical: 8),
-                    border: UnderlineInputBorder(),
+                    border: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                    enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                    focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppTheme.primaryColor)),
                   ),
                 )
               else
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    controller.text.isNotEmpty ? controller.text : 'Not set',
-                    style: const TextStyle(fontSize: 16, color: Colors.black),
-                  ),
+                Text(
+                  controller.text.isNotEmpty ? controller.text : 'Not set',
+                  style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500),
                 ),
             ],
           ),
@@ -398,21 +487,48 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildSettingsItem(IconData icon, String title, {String? subtitle, VoidCallback? onTap}) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.black87),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: Colors.black87,
+  Widget _buildSettingsItem(IconData icon, String title, {String? subtitle, required bool isSet, VoidCallback? onTap}) {
+    return GlassCard(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isSet ? AppTheme.primaryColor.withValues(alpha: 0.2) : Colors.white10,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: isSet ? AppTheme.primaryColor : Colors.white54, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isSet ? Colors.white : Colors.white54,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (subtitle != null)
+                    Text(
+                      subtitle,
+                      style: const TextStyle(color: Colors.white38, fontSize: 12),
+                    ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white24),
+          ],
         ),
       ),
-      subtitle: subtitle != null ? Text(subtitle) : null,
-      onTap: onTap ?? () {},
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
     );
   }
 }

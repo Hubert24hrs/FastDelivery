@@ -10,6 +10,10 @@ class DriverApplicationModel {
   final String vehicleYear;
   final String licensePlate;
   final DateTime createdAt;
+  final String? licenseUrl;
+  final String? registrationUrl;
+  final String? insuranceUrl;
+  final String? permitUrl;
 
   DriverApplicationModel({
     required this.id,
@@ -21,6 +25,10 @@ class DriverApplicationModel {
     required this.vehicleYear,
     required this.licensePlate,
     required this.createdAt,
+    this.licenseUrl,
+    this.registrationUrl,
+    this.insuranceUrl,
+    this.permitUrl,
   });
 
   factory DriverApplicationModel.fromMap(Map<String, dynamic> data, String id) {
@@ -47,6 +55,10 @@ class DriverApplicationModel {
       vehicleYear: data['vehicleYear'] ?? '',
       licensePlate: data['licensePlate'] ?? '',
       createdAt: parsedCreatedAt,
+      licenseUrl: data['licenseUrl'],
+      registrationUrl: data['registrationUrl'],
+      insuranceUrl: data['insuranceUrl'],
+      permitUrl: data['permitUrl'],
     );
   }
 
@@ -60,6 +72,10 @@ class DriverApplicationModel {
       'vehicleYear': vehicleYear,
       'licensePlate': licensePlate,
       'createdAt': createdAt.toIso8601String(),
+      'licenseUrl': licenseUrl,
+      'registrationUrl': registrationUrl,
+      'insuranceUrl': insuranceUrl,
+      'permitUrl': permitUrl,
     };
   }
 }

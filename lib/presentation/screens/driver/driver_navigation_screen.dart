@@ -220,9 +220,16 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
                               Expanded(
                                 child: OutlinedButton.icon(
                                   onPressed: () async {
+                                    final phone = ride.userPhone;
+                                    if (phone == null || phone.isEmpty) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('No phone number available')),
+                                      );
+                                      return;
+                                    }
                                     final Uri launchUri = Uri(
                                       scheme: 'tel',
-                                      path: '08012345678', // Mock phone number
+                                      path: phone, 
                                     );
                                     if (await canLaunchUrl(launchUri)) {
                                       await launchUrl(launchUri);
@@ -353,20 +360,6 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
                   ),
                 ),
               ),
-
-              // Debug: Simulate Movement Button (Hidden for Real GPS)
-              /*
-              Positioned(
-                bottom: 180,
-                right: 16,
-                child: FloatingActionButton(
-                  heroTag: 'debug_move',
-                  backgroundColor: Colors.purple,
-                  child: const Icon(Icons.directions_run, color: Colors.white),
-                  onPressed: _simulateMovement,
-                ),
-              ),
-              */
             ],
           );
         },
@@ -584,18 +577,6 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
                   ),
                 ),
               ),
-
-              // Debug: Simulate Movement Button
-              Positioned(
-                bottom: 220,
-                right: 16,
-                child: FloatingActionButton(
-                  heroTag: 'debug_move_courier',
-                  backgroundColor: Colors.purple,
-                  child: const Icon(Icons.directions_run, color: Colors.white),
-                  onPressed: _simulateMovement,
-                ),
-              ),
             ],
           );
         },
@@ -691,10 +672,10 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
 
   void _onMapCreated(mapbox.MapboxMap mapboxMap) {
     _mapboxMap = mapboxMap;
-    _drawRoute();
+    _renderRoute();
   }
 
-  Future<void> _drawRoute() async {
+  Future<void> _renderRoute() async {
     if (_mapboxMap == null) return;
 
     final pickup = widget.ride?.pickupLocation ?? widget.courier!.pickupLocation;
@@ -720,46 +701,16 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
 
     // Fit Camera
     await _mapboxMap?.flyTo(
-      mapbox.CameraOptions(
-        center: mapbox.Point(
-          coordinates: mapbox.Position(
-            (pickup.longitude + dropoff.longitude) / 2,
-            (pickup.latitude + dropoff.latitude) / 2,
+        mapbox.CameraOptions(
+          center: mapbox.Point(
+            coordinates: mapbox.Position(
+              (pickup.longitude + dropoff.longitude) / 2,
+              (pickup.latitude + dropoff.latitude) / 2,
+            ),
           ),
+          zoom: 11.5, 
         ),
-        zoom: 11.0,
-      ),
-      mapbox.MapAnimationOptions(duration: 1000),
-    );
-  }
-  
-  void _simulateMovement() {
-    // Mock movement: Move slightly north-east
-    final currentLat = _lastPosition?.latitude ?? 6.5244;
-    final currentLng = _lastPosition?.longitude ?? 3.3792;
-    
-    final newLat = currentLat + 0.001;
-    final newLng = currentLng + 0.001;
-    
-    final newPosition = Position(
-      latitude: newLat,
-      longitude: newLng,
-      timestamp: DateTime.now(),
-      accuracy: 10,
-      altitude: 0,
-      heading: 0,
-      speed: 10,
-      speedAccuracy: 0, 
-      altitudeAccuracy: 0, 
-      headingAccuracy: 0,
-    );
-    
-    _lastPosition = newPosition;
-    _updateDriverLocationInFirestore(newPosition);
-    _updateMapLocation(newPosition);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Debug: Moved to $newLat, $newLng')),
+        mapbox.MapAnimationOptions(duration: 1000),
     );
   }
 

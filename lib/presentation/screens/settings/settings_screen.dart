@@ -1,6 +1,9 @@
+
+import 'package:fast_delivery/core/models/user_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/providers/settings_provider.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -49,13 +52,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.surfaceColor,
-        title: const Text('Night Mode', style: TextStyle(color: Colors.white)),
+        title: const Text('Theme Mode', style: TextStyle(color: Colors.white)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             {'label': 'System', 'value': ThemeMode.system},
-            {'label': 'On', 'value': ThemeMode.dark},
-            {'label': 'Off', 'value': ThemeMode.light},
+            {'label': 'Dark', 'value': ThemeMode.dark},
+            {'label': 'Light', 'value': ThemeMode.light},
           ].map((item) {
             final mode = item['value'] as ThemeMode;
             final label = item['label'] as String;
@@ -137,108 +140,179 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  void _showNotImplemented() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('This feature is coming soon!', style: TextStyle(color: Colors.black)),
+        backgroundColor: AppTheme.primaryColor,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
+    final userId = ref.watch(currentUserIdProvider);
+    final userAsync = userId != null 
+        ? ref.watch(databaseServiceProvider).getUserStream(userId)
+        : const Stream<UserModel?>.empty();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(), 
-        ),
-      ),
-      body: ListView(
-        children: [
-          _buildSectionHeader('Phone number'),
-          _buildListTile(
-            title: '+23*******155',
-            onTap: () {},
-          ),
-          const Divider(height: 1, color: Colors.white10),
-          
-          _buildListTile(
-            title: 'In-app calls',
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(12),
+    return StreamBuilder<UserModel?>(
+      stream: userAsync,
+      builder: (context, snapshot) {
+        final user = snapshot.data;
+
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            title: const Text('Settings', style: TextStyle(fontWeight: FontWeight.bold)),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: GlassCard(
+                borderRadius: 50,
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => context.pop(), 
+                ),
               ),
-              child: const Text('New', style: TextStyle(color: Colors.white, fontSize: 10)),
             ),
-            onTap: () {},
           ),
-          
-          _buildSectionHeader('Language'),
-          _buildListTile(
-            title: 'Default language',
-            subtitle: settings.language,
-            onTap: () => _showLanguageDialog(settings.language),
+          body: Container(
+             decoration: const BoxDecoration(
+              gradient: AppTheme.backgroundGradient,
+            ),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 120, 16, 40),
+              children: [
+                _buildSectionHeader('ACCOUNT'),
+                GlassCard(
+                  child: Column(
+                    children: [
+                      _buildListTile(
+                        title: 'Phone Number',
+                        subtitle: user?.phoneNumber ?? 'Not set',
+                        icon: Icons.phone,
+                        onTap: () {}, // Already set in profile
+                      ),
+                      const Divider(height: 1, color: Colors.white10, indent: 60),
+                       _buildListTile(
+                        title: 'Email',
+                        subtitle: user?.email ?? '---',
+                        icon: Icons.email,
+                        onTap: () {},
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                _buildSectionHeader('PREFERENCES'),
+                GlassCard(
+                  child: Column(
+                    children: [
+                      _buildListTile(
+                        title: 'Language',
+                        subtitle: settings.language,
+                        icon: Icons.language,
+                        onTap: () => _showLanguageDialog(settings.language),
+                      ),
+                      const Divider(height: 1, color: Colors.white10, indent: 60),
+                      _buildListTile(
+                        title: 'Theme',
+                        subtitle: _getThemeLabel(settings.themeMode),
+                        icon: Icons.brightness_6,
+                        onTap: () => _showThemeDialog(settings.themeMode),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                _buildSectionHeader('SUPPORT'),
+                 GlassCard(
+                  child: Column(
+                    children: [
+                      _buildListTile(
+                        title: 'Help Center',
+                        icon: Icons.help_outline,
+                        onTap: _showNotImplemented,
+                      ),
+                      const Divider(height: 1, color: Colors.white10, indent: 60),
+                      _buildListTile(
+                        title: 'Terms & Privacy',
+                        icon: Icons.privacy_tip_outlined,
+                        onTap: _showNotImplemented,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 48),
+
+                GlassCard(
+                   color: Colors.red.withValues(alpha: 0.1),
+                   borderColor: Colors.red.withValues(alpha: 0.3),
+                   child: Column(
+                     children: [
+                       _buildListTile(
+                          title: 'Log Out',
+                          icon: Icons.logout,
+                          iconColor: Colors.redAccent,
+                          textColor: Colors.redAccent,
+                          onTap: () async {
+                            await ref.read(authServiceProvider).signOut();
+                            if (mounted) context.go('/login');
+                          },
+                        ),
+                        const Divider(height: 1, color: Colors.white10, indent: 60),
+                        _buildListTile(
+                          title: 'Delete Account',
+                          icon: Icons.delete_forever,
+                          iconColor: Colors.red,
+                          textColor: Colors.red,
+                          onTap: _showDeleteAccountDialog,
+                        ),
+                     ],
+                   ),
+                ),
+
+                const SizedBox(height: 24),
+                Center(
+                  child: Text(
+                    'Version 1.0.0',
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
           ),
-          
-          _buildListTile(
-            title: 'Distances',
-            trailing: const Text('Kilometers', style: TextStyle(color: Colors.white54)),
-            onTap: () {},
-          ),
-          
-          _buildSectionHeader('Night mode'),
-          _buildListTile(
-            title: 'System',
-            subtitle: _getThemeLabel(settings.themeMode),
-            onTap: () => _showThemeDialog(settings.themeMode),
-          ),
-          
-          _buildListTile(
-            title: 'Navigation',
-            onTap: () {},
-          ),
-          
-          _buildListTile(
-            title: 'Rules and terms',
-            onTap: () {},
-          ),
-          
-          const SizedBox(height: 24),
-          
-          _buildListTile(
-            title: 'Log out',
-            onTap: () async {
-              await ref.read(authServiceProvider).signOut();
-              if (mounted) context.go('/login');
-            },
-          ),
-          
-          _buildListTile(
-            title: 'Delete account',
-            textColor: Colors.red,
-            onTap: _showDeleteAccountDialog,
-          ),
-        ],
-      ),
+        );
+      }
     );
   }
 
   String _getThemeLabel(ThemeMode mode) {
     switch (mode) {
       case ThemeMode.system: return 'System';
-      case ThemeMode.dark: return 'On';
-      case ThemeMode.light: return 'Off';
+      case ThemeMode.dark: return 'Dark';
+      case ThemeMode.light: return 'Light';
     }
   }
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+      padding: const EdgeInsets.only(left: 16, bottom: 8),
       child: Text(
         title,
         style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
+          color: AppTheme.primaryColor,
+          fontSize: 12,
           fontWeight: FontWeight.bold,
+          letterSpacing: 1.5,
         ),
       ),
     );
@@ -247,22 +321,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _buildListTile({
     required String title,
     String? subtitle,
-    Widget? trailing,
+    required IconData icon,
+    Color? iconColor,
     Color? textColor,
     required VoidCallback onTap,
   }) {
     return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: (iconColor ?? Colors.white).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: iconColor ?? Colors.white70, size: 20),
+      ),
       title: Text(
         title,
         style: TextStyle(
-          color: textColor ?? Colors.white70,
+          color: textColor ?? Colors.white,
           fontSize: 16,
+          fontWeight: FontWeight.w500,
         ),
       ),
-      subtitle: subtitle != null ? Text(subtitle, style: const TextStyle(color: Colors.white38)) : null,
-      trailing: trailing ?? const Icon(Icons.chevron_right, color: Colors.white24),
+      subtitle: subtitle != null ? Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 13)) : null,
+      trailing: const Icon(Icons.chevron_right, color: Colors.white24, size: 20),
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
   }
 }

@@ -1,4 +1,5 @@
 
+import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -37,9 +38,10 @@ class _PackageDetailsSheetState extends State<PackageDetailsSheet> {
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border.all(color: Colors.white10),
       ),
       child: SingleChildScrollView(
         child: Padding(
@@ -57,11 +59,11 @@ class _PackageDetailsSheetState extends State<PackageDetailsSheet> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Colors.white,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.black54),
+                    icon: const Icon(Icons.close, color: Colors.white54),
                     onPressed: () => context.pop(),
                   ),
                 ],
@@ -72,7 +74,7 @@ class _PackageDetailsSheetState extends State<PackageDetailsSheet> {
               Container(
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
+                  color: Colors.black.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -103,23 +105,23 @@ class _PackageDetailsSheetState extends State<PackageDetailsSheet> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+                  Icon(Icons.info_outline, size: 16, color: Colors.white54),
                 ],
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _descriptionController,
                 maxLines: 3,
-                style: const TextStyle(color: Colors.black),
+                style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'Describe the parcel (value must be under N50,000)',
-                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  hintStyle: TextStyle(color: Colors.white38),
                   filled: true,
-                  fillColor: Colors.grey[100],
+                  fillColor: Colors.black.withValues(alpha: 0.2),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -133,7 +135,7 @@ class _PackageDetailsSheetState extends State<PackageDetailsSheet> {
                   padding: EdgeInsets.only(top: 8.0),
                   child: Text(
                     '0/200',
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                    style: TextStyle(color: Colors.white38, fontSize: 12),
                   ),
                 ),
               ),
@@ -147,7 +149,7 @@ class _PackageDetailsSheetState extends State<PackageDetailsSheet> {
                 child: ElevatedButton(
                   onPressed: _handleSave,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFCCFF00), // Lime green
+                    backgroundColor: AppTheme.primaryColor, // Lime green
                     foregroundColor: Colors.black,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -177,14 +179,14 @@ class _PackageDetailsSheetState extends State<PackageDetailsSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.black : Colors.transparent,
+          color: isSelected ? AppTheme.primaryColor : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
           label,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black,
+            color: isSelected ? Colors.black : Colors.white54,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -196,14 +198,15 @@ class _PackageDetailsSheetState extends State<PackageDetailsSheet> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: Colors.black.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white10),
       ),
       child: Row(
         children: [
           // Flag Icon (Static for now)
-          const Icon(Icons.flag, color: Colors.green),
-          const Icon(Icons.arrow_drop_down, color: Colors.black),
+          const Icon(Icons.flag, color: AppTheme.primaryColor),
+          const Icon(Icons.arrow_drop_down, color: Colors.white),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -211,11 +214,11 @@ class _PackageDetailsSheetState extends State<PackageDetailsSheet> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
                 ),
                 TextField(
                   controller: controller,
-                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                   decoration: const InputDecoration(
                     isDense: true,
                     contentPadding: EdgeInsets.zero,
@@ -225,7 +228,7 @@ class _PackageDetailsSheetState extends State<PackageDetailsSheet> {
               ],
             ),
           ),
-          const Icon(Icons.contact_phone_outlined, color: Colors.black),
+          const Icon(Icons.contact_phone_outlined, color: Colors.white54),
         ],
       ),
     );
