@@ -30,6 +30,42 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
   String _paymentMethod = 'Cash';
   bool _receiverPays = false;
   String _dropoffAddress = '';
+  
+  // Multi-stop support
+  List<String> _additionalStops = [];
+  
+  // Current pickup address
+  String _currentAddress = 'Fetching location...';  
+  bool _isLoadingLocation = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCurrentLocation();
+  }
+
+  Future<void> _fetchCurrentLocation() async {
+    try {
+      final position = await ref.read(locationServiceProvider).determinePosition();
+      final address = await ref.read(locationServiceProvider).getAddressFromCoordinates(
+        position.latitude, 
+        position.longitude,
+      );
+      if (mounted) {
+        setState(() {
+          _currentAddress = address ?? 'Current Location';
+          _isLoadingLocation = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _currentAddress = 'Location unavailable';
+          _isLoadingLocation = false;
+        });
+      }
+    }
+  }
 
   Future<void> _requestCourier() async {
     final userId = ref.read(currentUserIdProvider);
@@ -149,6 +185,78 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
     );
   }
 
+  void _showAddStopsDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.surfaceColor,
+        title: const Text('Add Stop', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: controller,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Enter stop address',
+                hintStyle: const TextStyle(color: Colors.white38),
+                filled: true,
+                fillColor: Colors.white10,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            if (_additionalStops.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Text('Current Stops:', style: TextStyle(color: Colors.white70)),
+              ..._additionalStops.asMap().entries.map((e) => ListTile(
+                dense: true,
+                title: Text('${e.key + 1}. ${e.value}', style: const TextStyle(color: Colors.white)),
+                trailing: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.red, size: 18),
+                  onPressed: () {
+                    setState(() => _additionalStops.removeAt(e.key));
+                    Navigator.pop(context);
+                    _showAddStopsDialog();
+                  },
+                ),
+              )),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty && _additionalStops.length < 3) {
+                setState(() => _additionalStops.add(controller.text.trim()));
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Stop added: ${controller.text}')),
+                );
+              } else if (_additionalStops.length >= 3) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Maximum 3 stops allowed')),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.black,
+            ),
+            child: const Text('Add Stop'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -217,13 +325,24 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
                         const Icon(Icons.my_location, color: AppTheme.primaryColor, size: 20),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text(
-                            'Prince Samuel Adedoyin St 2', // Mock current location
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
+                          child: _isLoadingLocation
+                              ? const SizedBox(
+                                  height: 16,
+                                  width: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                )
+                              : Text(
+                                  _currentAddress,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                         ),
                       ],
                     ),
@@ -252,15 +371,27 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
                               ),
                             ),
                             const Spacer(),
-                            const Text(
-                              'Add stops',
-                              style: TextStyle(
-                                color: Colors.white54,
-                                fontSize: 14,
+                            GestureDetector(
+                              onTap: _showAddStopsDialog,
+                              child: Row(
+                                children: [
+                                  Text(
+                                    _additionalStops.isEmpty ? 'Add stops' : '${_additionalStops.length} stop(s)',
+                                    style: TextStyle(
+                                      color: _additionalStops.isEmpty ? Colors.white54 : AppTheme.primaryColor,
+                                      fontSize: 14,
+                                      fontWeight: _additionalStops.isEmpty ? FontWeight.normal : FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    _additionalStops.isEmpty ? Icons.add : Icons.edit,
+                                    color: _additionalStops.isEmpty ? Colors.white54 : AppTheme.primaryColor,
+                                    size: 20,
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            const Icon(Icons.add, color: Colors.white54, size: 20),
                           ],
                         ),
                       ),

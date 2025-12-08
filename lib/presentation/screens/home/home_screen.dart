@@ -33,18 +33,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Small delay to ensure providers are ready
     await Future.delayed(const Duration(milliseconds: 500));
     
-    final userId = ref.read(authServiceProvider).currentUser?.uid ?? 'guest';
+    final userId = ref.read(authServiceProvider).currentUser?.uid;
     if (userId != null) {
-      debugPrint('HomeScreen: Checking active ride for userId: $userId');
+      if (kDebugMode) debugPrint('HomeScreen: Checking active ride for userId: $userId');
       final ride = await ref.read(rideServiceProvider).getActiveRideForUser(userId);
       if (ride != null && mounted) {
-        debugPrint('HomeScreen: Active ride found (${ride.id}). Showing banner.');
+        if (kDebugMode) debugPrint('HomeScreen: Active ride found (${ride.id}). Showing banner.');
         setState(() {
           _activeRide = ride;
         });
       }
     }
   }
+
 
   _onMapCreated(mapbox.MapboxMap mapboxMap) {
     _mapboxMap = mapboxMap;

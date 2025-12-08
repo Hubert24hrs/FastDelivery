@@ -1,5 +1,6 @@
 import 'package:fast_delivery/core/models/courier_model.dart';
 import 'package:fast_delivery/core/models/ride_model.dart';
+import 'package:fast_delivery/core/services/receipt_service.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -149,6 +150,44 @@ class HistoryDetailsScreen extends StatelessWidget {
                     ],
                   ),
                 ],
+              ),
+            ],
+            
+            // Download Receipt Button
+            if (isRide && status == 'completed') ...[
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Generating receipt...')),
+                    );
+                    try {
+                      final receiptService = ReceiptService();
+                      final path = await receiptService.generateReceipt(ride!);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Receipt saved to: $path')),
+                        );
+                        // In production, use open_file or share_plus to open/share
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: $e')),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.download),
+                  label: const Text('DOWNLOAD RECEIPT'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
               ),
             ],
           ],

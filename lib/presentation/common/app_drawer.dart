@@ -41,7 +41,12 @@ class AppDrawer extends ConsumerWidget {
                       CircleAvatar(
                         radius: 30,
                         backgroundColor: Colors.grey[200],
-                        child: const Icon(Icons.person, size: 30, color: Colors.grey),
+                        backgroundImage: snapshot.data?.photoUrl != null
+                            ? NetworkImage(snapshot.data!.photoUrl!)
+                            : null,
+                        child: snapshot.data?.photoUrl == null
+                            ? const Icon(Icons.person, size: 30, color: Colors.grey)
+                            : null,
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -98,7 +103,10 @@ class AppDrawer extends ConsumerWidget {
                   title: 'Promotions', 
                   subtitle: 'Enter promo code',
                   isNew: true,
-                  onTap: () {},
+                  onTap: () {
+                    context.pop();
+                    context.go('/promo');
+                  },
                 ),
                 _buildMenuItem(
                   context, 
@@ -111,9 +119,12 @@ class AppDrawer extends ConsumerWidget {
                 ),
                 _buildMenuItem(
                   context, 
-                  icon: FontAwesomeIcons.shieldHalved, 
-                  title: 'Safety', 
-                  onTap: () {},
+                  icon: FontAwesomeIcons.gift, 
+                  title: 'Refer & Earn', 
+                  onTap: () {
+                    context.pop();
+                    context.go('/referral');
+                  },
                 ),
                 _buildMenuItem(
                   context, 
@@ -185,7 +196,7 @@ class AppDrawer extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const Icon(Icons.close, size: 16, color: Colors.grey),
+                    const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                   ],
                 ),
               ),

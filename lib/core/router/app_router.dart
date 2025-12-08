@@ -17,6 +17,9 @@ import 'package:fast_delivery/presentation/screens/history/history_screen.dart';
 import 'package:fast_delivery/presentation/screens/home/home_screen.dart';
 import 'package:fast_delivery/presentation/screens/map/map_screen.dart';
 import 'package:fast_delivery/presentation/screens/profile/profile_screen.dart';
+import 'package:fast_delivery/presentation/screens/promo/promo_screen.dart';
+import 'package:fast_delivery/presentation/screens/referral/referral_screen.dart';
+import 'package:fast_delivery/presentation/screens/schedule/schedule_ride_screen.dart';
 import 'package:fast_delivery/presentation/screens/settings/settings_screen.dart';
 import 'package:fast_delivery/presentation/screens/splash/splash_screen.dart';
 import 'package:fast_delivery/presentation/screens/tracking/tracking_screen.dart';
@@ -95,6 +98,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/promo',
+        builder: (context, state) => const PromoScreen(),
+      ),
+      GoRoute(
+        path: '/referral',
+        builder: (context, state) => const ReferralScreen(),
+      ),
+      GoRoute(
+        path: '/schedule',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return ScheduleRideScreen(rideDetails: extra);
+        },
       ),
       GoRoute(
         path: '/driver-selection',

@@ -1,4 +1,5 @@
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 class LocationService {
   // Determine the current position of the device.
@@ -49,5 +50,25 @@ class LocationService {
         distanceFilter: 10, // Update every 10 meters
       ),
     );
+  }
+
+  // Get address from coordinates using reverse geocoding
+  Future<String?> getAddressFromCoordinates(double latitude, double longitude) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(latitude, longitude);
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        // Format: Street, Area/Locality
+        final street = place.street ?? '';
+        final locality = place.locality ?? place.subLocality ?? '';
+        if (street.isNotEmpty && locality.isNotEmpty) {
+          return '$street, $locality';
+        }
+        return street.isNotEmpty ? street : locality;
+      }
+    } catch (e) {
+      return null;
+    }
+    return null;
   }
 }

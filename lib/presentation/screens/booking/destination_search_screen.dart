@@ -189,10 +189,57 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
                 ),
               ),
 
+              // Saved Destinations Quick Access
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildSavedDestinationCard(
+                        icon: Icons.home,
+                        label: 'Home',
+                        address: 'Set home location',
+                        onTap: () => _selectDestination('Home'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildSavedDestinationCard(
+                        icon: Icons.work,
+                        label: 'Work',
+                        address: 'Set work location',
+                        onTap: () => _selectDestination('Work'),
+                      ),
+                    ),
+                  ],
+                ),
+              ).animate().fadeIn(delay: 200.ms),
+
+              const SizedBox(height: 16),
+
+              // Recent Places Title
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'RECENT PLACES',
+                    style: TextStyle(
+                      color: AppTheme.primaryColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
               // Recent Places List
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   children: [
                     _buildRecentPlace(
                       'First Bank Lekki',
@@ -313,6 +360,61 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
         style: const TextStyle(color: Colors.white38, fontSize: 12),
       ),
       onTap: () => _selectDestination(title),
+    );
+  }
+
+  Widget _buildSavedDestinationCard({
+    required IconData icon,
+    required String label,
+    required String address,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white10,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: AppTheme.primaryColor, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    address,
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

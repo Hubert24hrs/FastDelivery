@@ -146,7 +146,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                                           Shadow(color: AppTheme.primaryColor.withValues(alpha: 0.5), blurRadius: 20),
                                         ],
                                       ),
-                                    ).animate(onPlay: (c) => c.repeat(reverse: true)).shimmer(duration: 2000.ms, color: Colors.white.withValues(alpha: 0.5)),
+                                    ).animate(onPlay: (c) => c.repeat(reverse: true)).shimmer(duration: 2000.ms, color: Colors.white.withValues(alpha: 0.8)),
                                   ],
                                 ),
                               ],

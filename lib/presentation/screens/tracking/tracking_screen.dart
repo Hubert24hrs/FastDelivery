@@ -3,6 +3,8 @@ import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/services/notification_service.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
+import 'package:fast_delivery/presentation/screens/rating/rating_sheet.dart';
+import 'package:fast_delivery/presentation/screens/tracking/trip_share_sheet.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -32,6 +34,25 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
   mapbox.CircleAnnotationManager? _circleAnnotationManager;
   mapbox.CircleAnnotation? _driverAnnotation;
   RideModel? _latestRide;
+
+  // Calculate estimated time of arrival based on driver location
+  int _calculateETA(RideModel? ride) {
+    if (ride == null || ride.driverLocation == null) return 5; // Default
+    
+    // Simple distance-based ETA calculation
+    // In production, you'd use a routing API for accurate estimates
+    final driverLat = ride.driverLocation!.latitude;
+    final driverLng = ride.driverLocation!.longitude;
+    final destLat = ride.dropoffLocation.latitude;
+    final destLng = ride.dropoffLocation.longitude;
+    
+    // Rough distance calculation (Haversine would be better)
+    final distance = ((destLat - driverLat).abs() + (destLng - driverLng).abs()) * 111; // km approximation
+    
+    // Assume average speed of 30 km/h in city
+    final etaMinutes = (distance / 30 * 60).round();
+    return etaMinutes.clamp(1, 60); // Between 1 and 60 minutes
+  }
 
   _onMapCreated(mapbox.MapboxMap mapboxMap) async {
     _mapboxMap = mapboxMap;
@@ -114,7 +135,7 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('TrackingScreen build: rideId=${widget.rideId}');
+    if (kDebugMode) debugPrint('TrackingScreen build: rideId=${widget.rideId}');
     
     final rideStream = widget.rideId != null 
         ? ref.watch(rideServiceProvider).streamRide(widget.rideId!) 
@@ -157,7 +178,7 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
             child: StreamBuilder<RideModel?>(
               stream: rideStream,
               builder: (context, snapshot) {
-                debugPrint('Tracking Stream: hasData=${snapshot.hasData}, error=${snapshot.error}, status=${snapshot.data?.status}');
+                if (kDebugMode) debugPrint('Tracking Stream: hasData=${snapshot.hasData}, error=${snapshot.error}, status=${snapshot.data?.status}');
                 
                 if (snapshot.hasError) {
                   return GlassCard(
@@ -244,7 +265,11 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            status == 'arrived' ? 'Meet your driver at pickup' : 'Arriving in 5 min',
+                            status == 'arrived' 
+                                ? 'Meet your driver at pickup' 
+                                : status == 'in_progress'
+                                    ? 'ETA: ${_calculateETA(ride)} min'
+                                    : 'Arriving in ${_calculateETA(ride)} min',
                             style: const TextStyle(color: Colors.white54),
                           ),
                           const SizedBox(height: 24),
@@ -340,7 +365,26 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                              const SizedBox(width: 12),
+                              // Share Trip Button
+                              IconButton(
+                                onPressed: () {
+                                  if (ride != null) {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      backgroundColor: Colors.transparent,
+                                      builder: (context) => TripShareSheet(ride: ride),
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.share, color: Colors.white),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.white10,
+                                  padding: const EdgeInsets.all(12),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: ElevatedButton.icon(
                                   onPressed: () {
@@ -375,14 +419,34 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: () => context.go('/'),
+                              onPressed: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) => RatingSheet(
+                                    driverName: ride?.driverName ?? 'Driver',
+                                    driverPhoto: ride?.driverPhoto,
+                                    onSubmit: (rating, feedback, tip) async {
+                                      // Save rating to Firestore (could add to ride document)
+                                      if (kDebugMode) debugPrint('Rating: $rating, Feedback: $feedback, Tip: $tip');
+                                      // In production, save this to Firestore
+                                    },
+                                  ),
+                                );
+                              },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppTheme.primaryColor,
                                 foregroundColor: Colors.black,
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                               ),
-                              child: const Text('BACK TO HOME'),
+                              child: const Text('RATE YOUR TRIP'),
                             ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextButton(
+                            onPressed: () => context.go('/'),
+                            child: const Text('Skip to Home', style: TextStyle(color: Colors.white54)),
                           ),
                         ] else if (status == 'cancelled') ...[
                            const Icon(Icons.cancel, color: Colors.red, size: 50),

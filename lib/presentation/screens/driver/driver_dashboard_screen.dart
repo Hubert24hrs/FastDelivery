@@ -80,99 +80,127 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
 
   // --- REFERENCE IMAGE 1: DASHBOARD / STATS ---
   Widget _buildDashboardView(bool isOnline) {
-    return Row(
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    
+    return Stack(
       children: [
-        // Sidebar (Navigation Rail) - Matches the "Purple Sidebar" description
-        NavigationRail(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: (int index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-            // Navigate to appropriate screens
-            switch (index) {
-              case 0: // Home - stay here
-                break;
-              case 1: // Wallet
-                context.push('/wallet');
-                break;
-              case 2: // Trips/History
-                context.push('/history');
-                break;
-              case 3: // Settings
-                context.push('/settings');
-                break;
-            }
-          },
-          backgroundColor: const Color(0xFF6C63FF), // FastPro Purple
-          selectedIconTheme: const IconThemeData(color: Colors.white),
-          unselectedIconTheme: IconThemeData(color: Colors.white.withValues(alpha: 0.5)),
-          selectedLabelTextStyle: const TextStyle(color: Colors.white, fontSize: 10),
-          unselectedLabelTextStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 10),
-          labelType: NavigationRailLabelType.all,
-          minWidth: 70,
-          groupAlignment: -0.8, // Top aligned
-          leading: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: const Icon(FontAwesomeIcons.bolt, color: Colors.white, size: 28), // Logo
-          ),
-          destinations: const [
-             NavigationRailDestination(
-              icon: Icon(Icons.dashboard_outlined, size: 22),
-              selectedIcon: Icon(Icons.dashboard, size: 22),
-              label: Text('Home'),
+        Row(
+          children: [
+            // Sidebar (Navigation Rail) - Matches the "Purple Sidebar" description
+            NavigationRail(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (int index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+                // Navigate to appropriate screens
+                switch (index) {
+                  case 0: // Home - stay here
+                    break;
+                  case 1: // Wallet
+                    context.push('/wallet');
+                    break;
+                  case 2: // Trips/History
+                    context.push('/history');
+                    break;
+                  case 3: // Settings
+                    context.push('/settings');
+                    break;
+                }
+              },
+              backgroundColor: const Color(0xFF6C63FF), // FastPro Purple
+              selectedIconTheme: const IconThemeData(color: Colors.white),
+              unselectedIconTheme: IconThemeData(color: Colors.white.withValues(alpha: 0.5)),
+              selectedLabelTextStyle: const TextStyle(color: Colors.white, fontSize: 10),
+              unselectedLabelTextStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 10),
+              labelType: NavigationRailLabelType.all,
+              minWidth: 70,
+              groupAlignment: -0.8, // Top aligned
+              leading: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: Icon(FontAwesomeIcons.bolt, color: Colors.white, size: 28), // Logo
+              ),
+              destinations: const [
+                NavigationRailDestination(
+                  icon: Icon(Icons.dashboard_outlined, size: 22),
+                  selectedIcon: Icon(Icons.dashboard, size: 22),
+                  label: Text('Home'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.wallet_outlined, size: 22),
+                  selectedIcon: Icon(Icons.wallet, size: 22),
+                  label: Text('Wallet'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.history_outlined, size: 22),
+                  selectedIcon: Icon(Icons.history, size: 22),
+                  label: Text('Trips'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.settings_outlined, size: 22),
+                  selectedIcon: Icon(Icons.settings, size: 22),
+                  label: Text('Settings'),
+                ),
+              ],
             ),
-             NavigationRailDestination(
-              icon: Icon(Icons.wallet_outlined, size: 22),
-              selectedIcon: Icon(Icons.wallet, size: 22),
-              label: Text('Wallet'),
-            ),
-             NavigationRailDestination(
-              icon: Icon(Icons.history_outlined, size: 22),
-              selectedIcon: Icon(Icons.history, size: 22),
-              label: Text('Trips'),
-            ),
-            NavigationRailDestination(
-              icon: Icon(Icons.settings_outlined, size: 22),
-              selectedIcon: Icon(Icons.settings, size: 22),
-              label: Text('Settings'),
+
+            // Main Content
+            Expanded(
+              child: Column(
+                children: [
+                  // Top Bar
+                  _buildDashboardAppBar(isOnline),
+                  
+                  // Scrollable Content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildEarningsChartCard(),
+                          const SizedBox(height: 24),
+                          Text(
+                            'Stats Overview',
+                            style: GoogleFonts.outfit(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          _buildStatsGrid(),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-
-        // Main Content
-        Expanded(
-          child: Column(
-            children: [
-              // Top Bar
-              _buildDashboardAppBar(isOnline),
-              
-              // Scrollable Content
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildEarningsChartCard(),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Stats Overview',
-                        style: GoogleFonts.outfit(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildStatsGrid(),
-                    ],
+        // Mobile menu FAB for drawer access
+        if (isMobile)
+          Positioned(
+            top: 50,
+            left: 16,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF6C63FF),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
                   ),
-                ),
+                ],
               ),
-            ],
+              child: IconButton(
+                icon: const Icon(Icons.menu, color: Colors.white),
+                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+              ),
+            ),
           ),
-        ),
       ],
     );
   }
