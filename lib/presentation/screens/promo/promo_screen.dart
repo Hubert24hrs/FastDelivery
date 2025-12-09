@@ -1,6 +1,7 @@
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/services/promo_service.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/common/background_orbs.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -80,13 +81,16 @@ class _PromoScreenState extends ConsumerState<PromoScreen> {
           ),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppTheme.backgroundGradient,
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+      body: Stack(
+        children: [
+          const BackgroundOrbs(),
+          Container(
+            decoration: const BoxDecoration(
+              gradient: AppTheme.backgroundGradient,
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -241,6 +245,8 @@ class _PromoScreenState extends ConsumerState<PromoScreen> {
             ),
           ),
         ),
+          ),
+        ],
       ),
     );
   }
