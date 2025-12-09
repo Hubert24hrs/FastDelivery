@@ -5,7 +5,6 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/router/app_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 // Top-level function for background handling
 @pragma('vm:entry-point')
@@ -181,6 +180,168 @@ class NotificationService {
         iOS: DarwinNotificationDetails(),
       ),
       payload: json.encode({'type': 'test'}),
+    );
+  }
+
+  // Ride status update notifications
+  Future<void> notifyRideStatusUpdate({
+    required String rideId,
+    required String status,
+    String? driverName,
+    String? driverPhone,
+  }) async {
+    String title;
+    String body;
+
+    switch (status) {
+      case 'accepted':
+        title = '🚗 Driver Found!';
+        body = '${driverName ?? "A driver"} has accepted your ride request.';
+        break;
+      case 'arrived':
+        title = '📍 Driver Arrived';
+        body = 'Your driver has arrived at the pickup location.';
+        break;
+      case 'in_progress':
+      case 'ongoing':
+        title = '🚀 Trip Started';
+        body = 'Your trip is now in progress. Enjoy your ride!';
+        break;
+      case 'completed':
+        title = '✅ Trip Completed';
+        body = 'Thanks for riding with Fast Delivery! Rate your trip.';
+        break;
+      case 'cancelled':
+        title = '❌ Ride Cancelled';
+        body = 'Your ride has been cancelled.';
+        break;
+      default:
+        title = 'Ride Update';
+        body = 'Your ride status has been updated to: $status';
+    }
+
+    await showLocalNotification(
+      title: title,
+      body: body,
+      payload: json.encode({
+        'type': 'ride_update',
+        'rideId': rideId,
+        'status': status,
+      }),
+    );
+  }
+
+  // Driver arrival alert with vibration/sound emphasis
+  Future<void> notifyDriverArrival({
+    required String rideId,
+    required String driverName,
+    String? vehicleInfo,
+  }) async {
+    const androidDetails = AndroidNotificationDetails(
+      'driver_arrival_channel',
+      'Driver Arrival Alerts',
+      channelDescription: 'Alerts when your driver arrives',
+      importance: Importance.max,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      playSound: true,
+      enableVibration: true,
+    );
+    
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentSound: true,
+        sound: 'default',
+      ),
+    );
+
+    await _localNotifications.show(
+      DateTime.now().millisecond,
+      '📍 Your Driver Has Arrived!',
+      '$driverName is waiting for you${vehicleInfo != null ? " in $vehicleInfo" : ""}',
+      details,
+      payload: json.encode({
+        'type': 'driver_arrival',
+        'rideId': rideId,
+      }),
+    );
+  }
+
+  // Courier/Delivery status updates
+  Future<void> notifyCourierStatusUpdate({
+    required String courierId,
+    required String status,
+    String? deliveryInfo,
+  }) async {
+    String title;
+    String body;
+
+    switch (status) {
+      case 'accepted':
+        title = '📦 Courier Assigned';
+        body = 'A dispatch rider has been assigned to your delivery.';
+        break;
+      case 'picked_up':
+        title = '📬 Package Picked Up';
+        body = 'Your package has been picked up and is on the way.';
+        break;
+      case 'delivered':
+        title = '✅ Delivery Complete';
+        body = 'Your package has been delivered successfully!';
+        break;
+      case 'cancelled':
+        title = '❌ Delivery Cancelled';
+        body = 'Your delivery request has been cancelled.';
+        break;
+      default:
+        title = 'Delivery Update';
+        body = 'Your delivery status: $status';
+    }
+
+    await showLocalNotification(
+      title: title,
+      body: body,
+      payload: json.encode({
+        'type': 'courier_update',
+        'courierId': courierId,
+        'status': status,
+      }),
+    );
+  }
+
+  // New ride request for drivers
+  Future<void> notifyNewRideRequest({
+    required String rideId,
+    required String pickupAddress,
+    required double price,
+  }) async {
+    const androidDetails = AndroidNotificationDetails(
+      'ride_request_channel',
+      'New Ride Requests',
+      channelDescription: 'Notifications for new ride requests',
+      importance: Importance.max,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      playSound: true,
+      enableVibration: true,
+    );
+    
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(presentAlert: true, presentSound: true),
+    );
+
+    await _localNotifications.show(
+      DateTime.now().millisecond,
+      '🚗 New Ride Request!',
+      'Pickup: $pickupAddress • ₦${price.toStringAsFixed(0)}',
+      details,
+      payload: json.encode({
+        'type': 'new_ride_request',
+        'rideId': rideId,
+      }),
     );
   }
 }

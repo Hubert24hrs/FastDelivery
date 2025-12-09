@@ -3,6 +3,7 @@ import 'package:fast_delivery/core/models/user_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/providers/settings_provider.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/common/background_orbs.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -179,13 +180,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
           ),
-          body: Container(
-             decoration: const BoxDecoration(
-              gradient: AppTheme.backgroundGradient,
-            ),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 120, 16, 40),
-              children: [
+          body: Stack(
+            children: [
+              const BackgroundOrbs(),
+              Container(
+                 decoration: const BoxDecoration(
+                  gradient: AppTheme.backgroundGradient,
+                ),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 120, 16, 40),
+                  children: [
                 _buildSectionHeader('ACCOUNT'),
                 GlassCard(
                   child: Column(
@@ -289,6 +293,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ],
             ),
+          ),
+            ],
           ),
         );
       }

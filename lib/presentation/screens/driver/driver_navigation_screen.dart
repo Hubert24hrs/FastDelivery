@@ -139,18 +139,18 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
     final rideStream = ref.watch(rideServiceProvider).streamRide(widget.ride!.id);
 
     return Scaffold(
-      body: StreamBuilder<RideModel>(
+      body: StreamBuilder<RideModel?>(
         stream: rideStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          if (!snapshot.hasData) {
+          final ride = snapshot.data;
+          if (ride == null) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final ride = snapshot.data!;
           final status = ride.status;
           
           // Update local status for logic if needed, but better to use 'ride.status' directly
@@ -602,8 +602,11 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
     
     try {
       String nextStatus = '';
-      if (courier.status == 'accepted') nextStatus = 'picked_up';
-      else if (courier.status == 'picked_up') nextStatus = 'delivered';
+      if (courier.status == 'accepted') {
+        nextStatus = 'picked_up';
+      } else if (courier.status == 'picked_up') {
+        nextStatus = 'delivered';
+      }
 
       debugPrint('DriverNavigation: Courier Transitioning to nextStatus=$nextStatus');
 
@@ -647,9 +650,13 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
     
     try {
       String nextStatus = '';
-      if (ride.status == 'accepted') nextStatus = 'arrived';
-      else if (ride.status == 'arrived') nextStatus = 'in_progress';
-      else if (ride.status == 'in_progress') nextStatus = 'completed';
+      if (ride.status == 'accepted') {
+        nextStatus = 'arrived';
+      } else if (ride.status == 'arrived') {
+        nextStatus = 'in_progress';
+      } else if (ride.status == 'in_progress') {
+        nextStatus = 'completed';
+      }
 
       debugPrint('DriverNavigation: Transitioning to nextStatus=$nextStatus');
 
@@ -693,7 +700,7 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
       manager.create(
         mapbox.PolylineAnnotationOptions(
           geometry: mapbox.LineString(coordinates: points.map((p) => p.coordinates).toList()),
-          lineColor: AppTheme.primaryColor.value,
+          lineColor: AppTheme.primaryColor.toARGB32(),
           lineWidth: 5.0,
         ),
       );

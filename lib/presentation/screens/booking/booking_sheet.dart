@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 
@@ -19,15 +18,8 @@ class BookingSheet extends ConsumerStatefulWidget {
 }
 
 class _BookingSheetState extends ConsumerState<BookingSheet> {
-  int _selectedRideIndex = 0;
   bool _isLoading = false;
   final TextEditingController _destinationController = TextEditingController();
-
-  final List<Map<String, dynamic>> _rideOptions = [
-    {'name': 'Standard', 'price': 1200.0, 'time': '5 min', 'icon': FontAwesomeIcons.car},
-    {'name': 'Premium', 'price': 2500.0, 'time': '8 min', 'icon': FontAwesomeIcons.carSide},
-    {'name': 'Van', 'price': 4000.0, 'time': '15 min', 'icon': FontAwesomeIcons.vanShuttle},
-  ];
 
   Future<void> _bookRide() async {
     setState(() => _isLoading = true);

@@ -12,6 +12,7 @@ class MapView extends StatefulWidget {
 }
 
 class _MapViewState extends State<MapView> {
+  // ignore: unused_field - stored for potential map operations
   mapbox.MapboxMap? _mapboxMap;
 
   _onMapCreated(mapbox.MapboxMap mapboxMap) async {

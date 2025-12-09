@@ -245,7 +245,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               },
               errorBuilder: (c, o, s) => Container(
                 height: 200,
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 child: const Center(child: Icon(Icons.broken_image, color: Colors.white54)),
               ),
             ),

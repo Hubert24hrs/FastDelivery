@@ -1,5 +1,4 @@
 import 'package:fast_delivery/core/models/ride_model.dart';
-import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
@@ -151,13 +150,13 @@ class TripShareSheet extends ConsumerWidget {
 
   void _shareViaSMS(BuildContext context, RideModel ride) {
     final message = _buildShareMessage(ride);
-    Share.share(message);
+    SharePlus.instance.share(ShareParams(text: message));
     Navigator.pop(context);
   }
 
   void _shareGeneric(BuildContext context, RideModel ride) {
     final message = _buildShareMessage(ride);
-    Share.share(message, subject: 'My Fast Delivery Trip');
+    SharePlus.instance.share(ShareParams(text: message, subject: 'My Fast Delivery Trip'));
     Navigator.pop(context);
   }
 

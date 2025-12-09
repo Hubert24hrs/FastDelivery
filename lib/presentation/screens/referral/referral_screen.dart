@@ -91,9 +91,11 @@ class _ReferralScreenState extends ConsumerState<ReferralScreen> {
 
   void _shareReferralCode() {
     if (_userCode == null) return;
-    Share.share(
-      'Join Fast Delivery with my referral code $_userCode and we both get ₦100! Download: https://fastdelivery.ng/download',
-      subject: 'Fast Delivery Referral',
+    SharePlus.instance.share(
+      ShareParams(
+        text: 'Join Fast Delivery with my referral code $_userCode and we both get ₦100! Download: https://fastdelivery.ng/download',
+        subject: 'Fast Delivery Referral',
+      ),
     );
   }
 

@@ -1,23 +1,62 @@
+import 'package:fast_delivery/core/providers/providers.dart';
+import 'package:fast_delivery/core/services/saved_destinations_service.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 
-class DestinationSearchScreen extends StatefulWidget {
-  const DestinationSearchScreen({super.key});
+class DestinationSearchScreen extends ConsumerStatefulWidget {
+  final String? preferredDriverId;
+  final String? preferredDriverName;
+  
+  const DestinationSearchScreen({
+    super.key,
+    this.preferredDriverId,
+    this.preferredDriverName,
+  });
 
   @override
-  State<DestinationSearchScreen> createState() => _DestinationSearchScreenState();
+  ConsumerState<DestinationSearchScreen> createState() => _DestinationSearchScreenState();
 }
 
-class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
+class _DestinationSearchScreenState extends ConsumerState<DestinationSearchScreen> {
   final TextEditingController _pickupController = TextEditingController(text: "Current Location");
   final TextEditingController _dropoffController = TextEditingController();
   final List<TextEditingController> _stopControllers = [];
   bool _isLoading = false;
+  
+  // Saved destinations
+  SavedDestination? _homeDestination;
+  SavedDestination? _workDestination;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedDestinations();
+  }
+
+  Future<void> _loadSavedDestinations() async {
+    final userId = ref.read(currentUserIdProvider);
+    if (userId == null) return;
+    
+    try {
+      final stream = ref.read(savedDestinationsServiceProvider).getSavedDestinations(userId);
+      stream.listen((destinations) {
+        if (mounted) {
+          setState(() {
+            _homeDestination = destinations.where((d) => d.name.toLowerCase() == 'home').firstOrNull;
+            _workDestination = destinations.where((d) => d.name.toLowerCase() == 'work').firstOrNull;
+          });
+        }
+      });
+    } catch (e) {
+      debugPrint('Error loading saved destinations: $e');
+    }
+  }
 
   @override
   void dispose() {
@@ -59,6 +98,7 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
           context.pop({
             'name': destinationName,
             'location': destinationPoint,
+            'preferredDriverId': widget.preferredDriverId,
           });
         }
       } else {
@@ -85,6 +125,7 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
     context.pop({
       'name': destinationName,
       'location': mockDestination,
+      'preferredDriverId': widget.preferredDriverId,
     });
   }
 
@@ -132,6 +173,36 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
                   ],
                 ),
               ),
+
+              // Preferred Driver Banner
+              if (widget.preferredDriverName != null)
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.5)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.star, color: AppTheme.primaryColor, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Requesting ${widget.preferredDriverName}',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white54, size: 18),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () => context.pop(), // Cancel preferred driver
+                      ),
+                    ],
+                  ),
+                ),
 
               // Input Section
               Padding(
@@ -198,8 +269,15 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
                       child: _buildSavedDestinationCard(
                         icon: Icons.home,
                         label: 'Home',
-                        address: 'Set home location',
-                        onTap: () => _selectDestination('Home'),
+                        address: _homeDestination?.address ?? 'Tap to set',
+                        isSaved: _homeDestination != null,
+                        onTap: () {
+                          if (_homeDestination != null) {
+                            _selectSavedDestination(_homeDestination!);
+                          } else {
+                            _promptSetDestination('Home');
+                          }
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -207,8 +285,15 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
                       child: _buildSavedDestinationCard(
                         icon: Icons.work,
                         label: 'Work',
-                        address: 'Set work location',
-                        onTap: () => _selectDestination('Work'),
+                        address: _workDestination?.address ?? 'Tap to set',
+                        isSaved: _workDestination != null,
+                        onTap: () {
+                          if (_workDestination != null) {
+                            _selectSavedDestination(_workDestination!);
+                          } else {
+                            _promptSetDestination('Work');
+                          }
+                        },
                       ),
                     ),
                   ],
@@ -363,20 +448,43 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
     );
   }
 
+  void _selectSavedDestination(SavedDestination destination) {
+    final destinationPoint = mapbox.Point(
+      coordinates: mapbox.Position(destination.longitude, destination.latitude),
+    );
+    context.pop({
+      'name': destination.address,
+      'location': destinationPoint,
+    });
+  }
+
+  void _promptSetDestination(String type) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Enter a $type address and it will be saved'),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () {},
+        ),
+      ),
+    );
+  }
+
   Widget _buildSavedDestinationCard({
     required IconData icon,
     required String label,
     required String address,
     required VoidCallback onTap,
+    bool isSaved = false,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white10,
+          color: isSaved ? AppTheme.primaryColor.withValues(alpha: 0.1) : Colors.white10,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white12),
+          border: Border.all(color: isSaved ? AppTheme.primaryColor.withValues(alpha: 0.3) : Colors.white12),
         ),
         child: Row(
           children: [
@@ -402,8 +510,8 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
                   ),
                   Text(
                     address,
-                    style: const TextStyle(
-                      color: Colors.white54,
+                    style: TextStyle(
+                      color: isSaved ? Colors.white70 : Colors.white54,
                       fontSize: 12,
                     ),
                     maxLines: 1,
@@ -412,6 +520,8 @@ class _DestinationSearchScreenState extends State<DestinationSearchScreen> {
                 ],
               ),
             ),
+            if (isSaved)
+              const Icon(Icons.check_circle, color: AppTheme.primaryColor, size: 16),
           ],
         ),
       ),

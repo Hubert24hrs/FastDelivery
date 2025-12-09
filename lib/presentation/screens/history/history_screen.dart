@@ -2,6 +2,7 @@ import 'package:fast_delivery/core/models/courier_model.dart';
 import 'package:fast_delivery/core/models/ride_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/common/background_orbs.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,19 +81,24 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> with SingleTicker
           ),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppTheme.backgroundGradient,
-        ),
-        child: userId == null
-            ? const Center(child: Text('Please login to view history', style: TextStyle(color: Colors.white)))
-            : TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildRidesList(userId),
-                  _buildCouriersList(userId),
-                ],
-              ),
+      body: Stack(
+        children: [
+          const BackgroundOrbs(),
+          Container(
+            decoration: const BoxDecoration(
+              gradient: AppTheme.backgroundGradient,
+            ),
+            child: userId == null
+                ? const Center(child: Text('Please login to view history', style: TextStyle(color: Colors.white)))
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildRidesList(userId),
+                      _buildCouriersList(userId),
+                    ],
+                  ),
+          ),
+        ],
       ),
     );
   }
@@ -240,9 +246,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> with SingleTicker
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.2),
+                        color: statusColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: statusColor.withOpacity(0.5), width: 1),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.5), width: 1),
                       ),
                       child: Text(
                         status.toUpperCase(),

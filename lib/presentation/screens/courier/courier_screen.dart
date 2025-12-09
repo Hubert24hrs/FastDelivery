@@ -27,9 +27,9 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
   // Courier Request Data
   Map<String, dynamic>? _packageDetails;
   double _price = 0.0;
+  String _dropoffAddress = '';
   String _paymentMethod = 'Cash';
   bool _receiverPays = false;
-  String _dropoffAddress = '';
   
   // Multi-stop support
   List<String> _additionalStops = [];

@@ -30,6 +30,7 @@ class TrackingScreen extends ConsumerStatefulWidget {
 }
 
 class _TrackingScreenState extends ConsumerState<TrackingScreen> {
+  // ignore: unused_field - stored for potential map operations
   mapbox.MapboxMap? _mapboxMap;
   mapbox.CircleAnnotationManager? _circleAnnotationManager;
   mapbox.CircleAnnotation? _driverAnnotation;
@@ -86,7 +87,7 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
             start.coordinates,
             end.coordinates,
           ]),
-          lineColor: AppTheme.primaryColor.value,
+          lineColor: AppTheme.primaryColor.toARGB32(),
           lineWidth: 5.0,
         ),
       );
@@ -121,9 +122,9 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
       _driverAnnotation = await _circleAnnotationManager?.create(
         mapbox.CircleAnnotationOptions(
           geometry: point,
-          circleColor: AppTheme.primaryColor.value,
+          circleColor: AppTheme.primaryColor.toARGB32(),
           circleRadius: 10.0,
-          circleStrokeColor: Colors.white.value,
+          circleStrokeColor: Colors.white.toARGB32(),
           circleStrokeWidth: 2.0,
         ),
       );
@@ -428,9 +429,29 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                                     driverName: ride?.driverName ?? 'Driver',
                                     driverPhoto: ride?.driverPhoto,
                                     onSubmit: (rating, feedback, tip) async {
-                                      // Save rating to Firestore (could add to ride document)
-                                      if (kDebugMode) debugPrint('Rating: $rating, Feedback: $feedback, Tip: $tip');
-                                      // In production, save this to Firestore
+                                      // Save rating to Firestore via RatingService
+                                      try {
+                                        await ref.read(ratingServiceProvider).submitRating(
+                                          rideId: ride!.id,
+                                          driverId: ride.driverId!,
+                                          passengerId: ride.userId,
+                                          stars: rating,
+                                          feedback: feedback,
+                                          tip: tip,
+                                        );
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text('Thanks for your rating!'),
+                                              backgroundColor: Colors.green,
+                                            ),
+                                          );
+                                          // Show add to favorites dialog
+                                          _showAddToFavoritesDialog(context, ref, ride);
+                                        }
+                                      } catch (e) {
+                                        if (kDebugMode) debugPrint('Error saving rating: $e');
+                                      }
                                     },
                                   ),
                                 );
@@ -496,6 +517,56 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                 ).animate().slideY(begin: 1, end: 0, duration: 600.ms, curve: Curves.easeOutQuart);
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddToFavoritesDialog(BuildContext context, WidgetRef ref, RideModel ride) {
+    if (ride.driverId == null) return;
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surfaceColor,
+        title: const Text('Add to Favorites?', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Would you like to add ${ride.driverName ?? "this driver"} to your favorite drivers?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('No Thanks', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final userId = ref.read(currentUserIdProvider);
+              if (userId != null) {
+                await ref.read(favoriteDriversServiceProvider).addFavorite(
+                  userId: userId,
+                  driverId: ride.driverId!,
+                  driverName: ride.driverName ?? 'Driver',
+                  driverPhoto: ride.driverPhoto,
+                  carModel: ride.carModel,
+                );
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Driver added to favorites!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.black,
+            ),
+            child: const Text('Add to Favorites'),
           ),
         ],
       ),

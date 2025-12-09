@@ -159,7 +159,7 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
                   CupertinoSwitch(
                     value: _receiverPays,
                     onChanged: (value) => setState(() => _receiverPays = value),
-                    activeColor: AppTheme.primaryColor,
+                    activeTrackColor: AppTheme.primaryColor,
                   ),
                 ],
               ),

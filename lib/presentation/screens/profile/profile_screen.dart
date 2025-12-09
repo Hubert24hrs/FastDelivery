@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:fast_delivery/core/models/user_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/common/background_orbs.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -282,13 +283,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               const SizedBox(width: 16),
             ],
           ),
-          body: Container(
-            decoration: const BoxDecoration(
-              gradient: AppTheme.backgroundGradient,
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.only(top: 100),
-              child: Column(
+          body: Stack(
+            children: [
+              const BackgroundOrbs(),
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: AppTheme.backgroundGradient,
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(top: 100),
+                  child: Column(
                 children: [
                   // Profile Header
                   Center(
@@ -464,6 +468,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ],
               ),
             ),
+          ),
+            ],
           ),
         );
       }

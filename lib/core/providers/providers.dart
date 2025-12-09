@@ -5,6 +5,11 @@ import 'package:fast_delivery/core/services/auth_service.dart';
 import 'package:fast_delivery/core/services/database_service.dart';
 import 'package:fast_delivery/core/services/location_service.dart';
 import 'package:fast_delivery/core/services/payment_service.dart';
+import 'package:fast_delivery/core/services/saved_destinations_service.dart';
+import 'package:fast_delivery/core/services/earnings_service.dart';
+import 'package:fast_delivery/core/services/rating_service.dart';
+import 'package:fast_delivery/core/services/favorite_drivers_service.dart';
+import 'package:fast_delivery/core/services/email_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fast_delivery/core/services/ride_service.dart';
 import 'package:fast_delivery/core/services/storage_service.dart';
@@ -27,6 +32,11 @@ final databaseServiceProvider = Provider<DatabaseService>((ref) => DatabaseServi
 final locationServiceProvider = Provider<LocationService>((ref) => LocationService());
 final paymentServiceProvider = Provider<PaymentService>((ref) => PaymentService());
 final storageServiceProvider = Provider<StorageService>((ref) => StorageService());
+final savedDestinationsServiceProvider = Provider<SavedDestinationsService>((ref) => SavedDestinationsService());
+final earningsServiceProvider = Provider<EarningsService>((ref) => EarningsService());
+final ratingServiceProvider = Provider<RatingService>((ref) => RatingService());
+final favoriteDriversServiceProvider = Provider<FavoriteDriversService>((ref) => FavoriteDriversService());
+final emailServiceProvider = Provider<EmailService>((ref) => EmailService());
 
 // Auth State
 final authStateProvider = StreamProvider<User?>((ref) {

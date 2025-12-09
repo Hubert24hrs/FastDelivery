@@ -101,6 +101,47 @@ class DatabaseService {
     }
     await _db.collection('couriers').doc(courierId).update(data);
   }
+
+  // Stream a specific courier by ID
+  Stream<CourierModel?> streamCourier(String courierId) {
+    return _db.collection('couriers').doc(courierId).snapshots().map((doc) {
+      if (doc.exists) {
+        return CourierModel.fromMap(doc.data()!, doc.id);
+      }
+      return null;
+    });
+  }
+
+  // Get active courier for user (sender)
+  Future<CourierModel?> getActiveCourierForUser(String userId) async {
+    try {
+      final snapshot = await _db
+          .collection('couriers')
+          .where('userId', isEqualTo: userId)
+          .where('status', whereIn: ['pending', 'accepted', 'picked_up'])
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        return CourierModel.fromMap(snapshot.docs.first.data(), snapshot.docs.first.id);
+      }
+    } catch (e) {
+      // Index might not exist, fallback to simpler query
+      final snapshot = await _db
+          .collection('couriers')
+          .where('userId', isEqualTo: userId)
+          .get();
+      
+      for (final doc in snapshot.docs) {
+        final courier = CourierModel.fromMap(doc.data(), doc.id);
+        if (['pending', 'accepted', 'picked_up'].contains(courier.status)) {
+          return courier;
+        }
+      }
+    }
+    return null;
+  }
   // ... existing methods ...
 
   Stream<List<RideModel>> getUserRides(String userId) {

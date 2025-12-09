@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fast_delivery/core/models/ride_model.dart';
 import 'package:fast_delivery/core/services/notification_service.dart';
+import 'package:flutter/foundation.dart';
 
 class RideService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -27,6 +28,16 @@ class RideService {
     });
   }
 
+  // Accept a ride (convenience method)
+  Future<void> acceptRide(String rideId, String driverId, String driverName) async {
+    await updateRideStatus(
+      rideId,
+      'accepted',
+      driverId: driverId,
+      driverName: driverName,
+    );
+  }
+
   // Update ride status and assign driver
   Future<void> updateRideStatus(
     String rideId, 
@@ -39,7 +50,7 @@ class RideService {
     String? plateNumber,
     GeoPoint? driverLocation,
   }) async {
-    print('RideService: Updating ride $rideId to status $status');
+    debugPrint('RideService: Updating ride $rideId to status $status');
     final Map<String, dynamic> data = {'status': status};
     
     if (driverId != null) data['driverId'] = driverId;
@@ -54,10 +65,10 @@ class RideService {
   }
 
   // Stream a specific ride by ID (for tracking)
-  Stream<RideModel> streamRide(String rideId) {
+  Stream<RideModel?> streamRide(String rideId) {
     return _ridesCollection.doc(rideId).snapshots().map((doc) {
       if (!doc.exists) {
-        throw Exception('Ride not found');
+        return null; // Return null instead of throwing exception
       }
       return RideModel.fromMap(doc.data()!, doc.id);
     });
@@ -77,7 +88,7 @@ class RideService {
         return RideModel.fromMap(snapshot.docs.first.data(), snapshot.docs.first.id);
       }
     } catch (e) {
-      print('Error getting active ride: $e');
+      debugPrint('Error getting active ride: $e');
     }
     return null;
   }
@@ -94,10 +105,10 @@ class RideService {
       for (final doc in snapshot.docs) {
         await doc.reference.update({'status': 'cancelled'});
         cancelledCount++;
-        print('RideService: Cancelled ride ${doc.id}');
+        debugPrint('RideService: Cancelled ride ${doc.id}');
       }
     } catch (e) {
-      print('Error cancelling all rides: $e');
+      debugPrint('Error cancelling all rides: $e');
     }
     return cancelledCount;
   }
@@ -117,7 +128,7 @@ class RideService {
         return RideModel.fromMap(snapshot.docs.first.data(), snapshot.docs.first.id);
       }
     } catch (e) {
-      print('Error getting active driver ride: $e');
+      debugPrint('Error getting active driver ride: $e');
     }
     return null;
   }

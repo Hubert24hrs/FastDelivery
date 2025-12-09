@@ -1,6 +1,7 @@
 import 'package:fast_delivery/core/models/user_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/common/background_orbs.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -44,17 +45,20 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
           ),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppTheme.backgroundGradient,
-        ),
-        child: StreamBuilder<UserModel?>(
-          stream: userStream,
-          builder: (context, snapshot) {
-            final balance = snapshot.data?.walletBalance ?? 0.0;
+      body: Stack(
+        children: [
+          const BackgroundOrbs(),
+          Container(
+            decoration: const BoxDecoration(
+              gradient: AppTheme.backgroundGradient,
+            ),
+            child: StreamBuilder<UserModel?>(
+              stream: userStream,
+              builder: (context, snapshot) {
+                final balance = snapshot.data?.walletBalance ?? 0.0;
             
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 110, 24, 40),
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 110, 24, 40),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -264,8 +268,10 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                 ],
               ),
             );
-          }
-        ),
+              }
+            ),
+          ),
+        ],
       ),
     );
   }

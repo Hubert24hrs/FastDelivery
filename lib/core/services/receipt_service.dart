@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -60,7 +59,7 @@ class ReceiptService {
               if (ride.driverId != null)
                 _buildSection('DRIVER', [
                   _buildRow('Name', ride.driverName ?? 'Driver'),
-                  _buildRow('Vehicle', ride.vehicleType),
+                  _buildRow('Vehicle', ride.carModel ?? 'N/A'),
                   if (ride.plateNumber != null)
                     _buildRow('Plate', ride.plateNumber!),
                 ]),
@@ -70,7 +69,7 @@ class ReceiptService {
               // Payment
               _buildSection('PAYMENT', [
                 _buildRow('Fare', '₦${ride.price.toStringAsFixed(2)}'),
-                _buildRow('Payment Method', ride.paymentMethod ?? 'Cash'),
+                _buildRow('Payment Method', 'Cash'),
               ]),
 
               pw.Spacer(),

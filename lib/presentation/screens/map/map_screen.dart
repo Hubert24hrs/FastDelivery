@@ -42,7 +42,7 @@ class _MapScreenState extends State<MapScreen> {
                       decoration: BoxDecoration(
                         color: AppTheme.surfaceColor,
                         shape: BoxShape.circle,
-                        boxShadow: [AppTheme.neonShadow],
+                        boxShadow: [AppTheme.glowShadow(AppTheme.primaryColor)],
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.arrow_back, color: Colors.white),

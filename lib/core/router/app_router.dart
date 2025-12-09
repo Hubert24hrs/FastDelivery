@@ -1,17 +1,19 @@
 import 'package:fast_delivery/core/providers/providers.dart';
-import 'package:fast_delivery/core/services/auth_service.dart';
-import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/core/utils/router_utils.dart';
 import 'package:fast_delivery/presentation/screens/admin/admin_dashboard_screen.dart';
 import 'package:fast_delivery/presentation/screens/auth/login_screen.dart';
 import 'package:fast_delivery/presentation/screens/booking/destination_search_screen.dart';
 import 'package:fast_delivery/presentation/screens/chat/chat_screen.dart';
 import 'package:fast_delivery/presentation/screens/courier/courier_screen.dart';
+import 'package:fast_delivery/presentation/screens/courier/courier_tracking_screen.dart';
 import 'package:fast_delivery/presentation/screens/driver/driver_dashboard_screen.dart';
 import 'package:fast_delivery/presentation/screens/driver/driver_mode_selection_screen.dart';
 import 'package:fast_delivery/presentation/screens/driver/driver_navigation_screen.dart';
 import 'package:fast_delivery/presentation/screens/driver/driver_pending_screen.dart';
 import 'package:fast_delivery/presentation/screens/driver/driver_registration_screen.dart';
+import 'package:fast_delivery/presentation/screens/driver/driver_earnings_screen.dart';
+import 'package:fast_delivery/presentation/screens/driver/driver_reviews_screen.dart';
+import 'package:fast_delivery/presentation/screens/profile/favorite_drivers_screen.dart';
 import 'package:fast_delivery/presentation/screens/history/history_details_screen.dart';
 import 'package:fast_delivery/presentation/screens/history/history_screen.dart';
 import 'package:fast_delivery/presentation/screens/home/home_screen.dart';
@@ -74,8 +76,25 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const MapScreen(),
       ),
       GoRoute(
+        path: '/destination',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return DestinationSearchScreen(
+            preferredDriverId: extra?['preferredDriverId'],
+            preferredDriverName: extra?['preferredDriverName'],
+          );
+        },
+      ),
+      GoRoute(
         path: '/courier',
         builder: (context, state) => const CourierScreen(),
+      ),
+      GoRoute(
+        path: '/courier-tracking',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          return CourierTrackingScreen(courierId: extra?['courierId']);
+        },
       ),
       GoRoute(
         path: '/profile',
@@ -187,6 +206,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             },
           ),
         ],
+      ),
+      GoRoute(
+        path: '/driver-earnings',
+        builder: (context, state) => const DriverEarningsScreen(),
+      ),
+      GoRoute(
+        path: '/driver-reviews',
+        builder: (context, state) => const DriverReviewsScreen(),
+      ),
+      GoRoute(
+        path: '/favorite-drivers',
+        builder: (context, state) => const FavoriteDriversScreen(),
       ),
     ],
   );
