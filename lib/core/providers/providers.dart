@@ -68,3 +68,11 @@ class DriverStatusNotifier extends Notifier<bool> {
 }
 
 final driverOnlineProvider = NotifierProvider<DriverStatusNotifier, bool>(DriverStatusNotifier.new);
+
+// Current User Role (for route protection)
+final currentUserRoleProvider = StreamProvider<String?>((ref) {
+  final userId = ref.watch(currentUserIdProvider);
+  if (userId == null) return Stream.value(null);
+  
+  return ref.watch(databaseServiceProvider).getUserStream(userId).map((user) => user?.role);
+});

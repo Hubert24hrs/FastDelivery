@@ -1,4 +1,5 @@
 import 'package:fast_delivery/core/providers/providers.dart';
+import 'package:fast_delivery/core/utils/role_guard.dart';
 import 'package:fast_delivery/core/utils/router_utils.dart';
 import 'package:fast_delivery/presentation/screens/admin/admin_dashboard_screen.dart';
 import 'package:fast_delivery/presentation/screens/auth/login_screen.dart';
@@ -33,6 +34,13 @@ import 'package:go_router/go_router.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
+  final userRoleAsync = ref.watch(currentUserRoleProvider);
+  // Extract role from AsyncValue - null if loading or error
+  final userRole = userRoleAsync.when(
+    data: (role) => role,
+    loading: () => null,
+    error: (_, __) => null,
+  );
 
   return GoRouter(
     initialLocation: '/splash',
@@ -43,6 +51,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = authState.value != null;
       final isLoggingIn = state.uri.path == '/login';
       final isSplash = state.uri.path == '/splash';
+      final currentPath = state.uri.path;
 
       if (isSplash) {
         return null; // Let splash handle its own navigation
@@ -54,6 +63,17 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (isLoggedIn && isLoggingIn) {
         return '/';
+      }
+
+      // Role-based route protection
+      if (isLoggedIn && userRole != null) {
+        final roleRedirect = RoleGuard.getRedirectPath(
+          userRole: userRole,
+          attemptedPath: currentPath,
+        );
+        if (roleRedirect != null) {
+          return roleRedirect;
+        }
       }
 
       return null;
