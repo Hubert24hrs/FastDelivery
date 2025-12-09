@@ -1,6 +1,7 @@
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/services/saved_destinations_service.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/common/background_orbs.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -139,12 +140,15 @@ class _DestinationSearchScreenState extends ConsumerState<DestinationSearchScree
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true, 
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppTheme.backgroundGradient,
-        ),
-        child: SafeArea(
-          child: Column(
+      body: Stack(
+        children: [
+          const BackgroundOrbs(),
+          Container(
+            decoration: const BoxDecoration(
+              gradient: AppTheme.backgroundGradient,
+            ),
+            child: SafeArea(
+              child: Column(
             children: [
               // Custom AppBar (since we want full control)
               Padding(
@@ -359,6 +363,8 @@ class _DestinationSearchScreenState extends ConsumerState<DestinationSearchScree
             ],
           ),
         ),
+          ),
+        ],
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fast_delivery/core/models/courier_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/common/background_orbs.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 
 import 'package:fast_delivery/presentation/screens/courier/package_details_sheet.dart';
@@ -269,6 +270,9 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
               gradient: AppTheme.backgroundGradient,
             ),
           ),
+          
+          // Background Orbs
+          const BackgroundOrbs(),
           
           // Back Button
           Positioned(

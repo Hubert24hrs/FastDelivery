@@ -1,6 +1,7 @@
 import 'package:fast_delivery/core/models/chat_message_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/common/background_orbs.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -89,13 +90,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppTheme.backgroundGradient,
-        ),
-        child: Column(
-          children: [
-            Expanded(
+      body: Stack(
+        children: [
+          const BackgroundOrbs(),
+          Container(
+            decoration: const BoxDecoration(
+              gradient: AppTheme.backgroundGradient,
+            ),
+            child: Column(
+              children: [
+                Expanded(
               child: StreamBuilder<List<ChatMessageModel>>(
                 stream: messagesStream,
                 builder: (context, snapshot) {
@@ -184,6 +188,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
           ],
         ),
+      ),
+        ],
       ),
     );
   }
