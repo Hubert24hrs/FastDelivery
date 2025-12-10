@@ -3,9 +3,11 @@ import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/models/user_model.dart';
 import 'package:fast_delivery/core/utils/validators.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:local_auth/local_auth.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -27,6 +29,136 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    try {
+      final authService = ref.read(authServiceProvider);
+      final dbService = ref.read(databaseServiceProvider);
+      final credential = await authService.signInWithGoogle();
+      
+      if (credential?.user != null) {
+        // Check if user exists in Firestore, if not create
+        final userDoc = await dbService.getUser(credential!.user!.uid);
+        if (userDoc == null) {
+          final newUser = UserModel(
+            id: credential.user!.uid,
+            email: credential.user!.email ?? '',
+            displayName: credential.user!.displayName ?? 'User',
+            phoneNumber: credential.user!.phoneNumber ?? '',
+            photoUrl: credential.user!.photoURL,
+            role: 'user',
+            walletBalance: 0.0,
+            createdAt: DateTime.now(),
+          );
+          await dbService.saveUser(newUser);
+        }
+        if (mounted) context.go('/');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign-in failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _signInWithApple() async {
+    setState(() => _isLoading = true);
+    try {
+      final authService = ref.read(authServiceProvider);
+      final dbService = ref.read(databaseServiceProvider);
+      final credential = await authService.signInWithApple();
+      
+      if (credential?.user != null) {
+        final userDoc = await dbService.getUser(credential!.user!.uid);
+        if (userDoc == null) {
+          final newUser = UserModel(
+            id: credential.user!.uid,
+            email: credential.user!.email ?? '',
+            displayName: credential.user!.displayName ?? 'Apple User',
+            phoneNumber: '',
+            role: 'user',
+            walletBalance: 0.0,
+            createdAt: DateTime.now(),
+          );
+          await dbService.saveUser(newUser);
+        }
+        if (mounted) context.go('/');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Apple sign-in failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loginWithBiometrics() async {
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Biometrics not available on web')),
+      );
+      return;
+    }
+    
+    setState(() => _isLoading = true);
+    try {
+      final LocalAuthentication auth = LocalAuthentication();
+      
+      // Check if biometrics are available
+      final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
+      final bool canAuthenticate = canAuthenticateWithBiometrics || await auth.isDeviceSupported();
+      
+      if (!canAuthenticate) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Biometrics not available on this device')),
+          );
+        }
+        return;
+      }
+      
+      // Authenticate with biometrics
+      final bool didAuthenticate = await auth.authenticate(
+        localizedReason: 'Authenticate to login to Fast Delivery',
+        options: const AuthenticationOptions(
+          stickyAuth: true,
+          biometricOnly: false,
+        ),
+      );
+      
+      if (didAuthenticate) {
+        // Check if user is already signed in (cached session)
+        final currentUser = ref.read(authServiceProvider).currentUser;
+        if (currentUser != null) {
+          if (mounted) context.go('/');
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Please login with email/password first, then use biometrics next time'),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Biometric error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _submit() async {
@@ -286,7 +418,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   
                   // Biometric Login Button
                   _buildNeomorphicButton(
-                    onTap: () {},
+                    onTap: _loginWithBiometrics,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -357,11 +489,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildSocialButton(Icons.g_mobiledata),
+                      _buildSocialButton(Icons.g_mobiledata, _signInWithGoogle),
                       const SizedBox(width: 16),
-                      _buildSocialButton(Icons.facebook),
-                      const SizedBox(width: 16),
-                      _buildSocialButton(Icons.apple),
+                      _buildSocialButton(Icons.apple, _signInWithApple),
                     ],
                   ),
                   
@@ -518,23 +648,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  Widget _buildSocialButton(IconData icon) {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        color: AppTheme.secondaryColor.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF18181B).withValues(alpha: 0.8),
-            offset: const Offset(0, 6),
-            blurRadius: 0,
-          ),
-        ],
+  Widget _buildSocialButton(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: _isLoading ? null : onTap,
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: AppTheme.secondaryColor.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF18181B).withValues(alpha: 0.8),
+              offset: const Offset(0, 6),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: Icon(icon, color: Colors.white, size: 28),
       ),
-      child: Icon(icon, color: Colors.white, size: 28),
     );
   }
 }

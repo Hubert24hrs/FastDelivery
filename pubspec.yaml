@@ -60,6 +60,8 @@ dependencies:
   google_sign_in: ^6.2.1
   sign_in_with_apple: ^6.1.1
   crypto: ^3.0.3
+  flutter_paystack_plus: ^2.0.0
+  local_auth: ^2.3.0
 
 dev_dependencies:
   flutter_test:

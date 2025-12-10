@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fast_delivery/core/models/ride_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
+import 'package:fast_delivery/core/services/paystack_service.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
@@ -20,24 +21,78 @@ class BookingSheet extends ConsumerStatefulWidget {
 class _BookingSheetState extends ConsumerState<BookingSheet> {
   bool _isLoading = false;
   final TextEditingController _destinationController = TextEditingController();
+  String _paymentMethod = 'wallet'; // 'wallet' or 'card'
+  final double _ridePrice = 2500.0;
 
   Future<void> _bookRide() async {
     setState(() => _isLoading = true);
 
     try {
-      // Mock Destination Coordinates (e.g., Victoria Island, Lagos)
-      // In a real app, this would come from the selected destination
+      final userId = ref.read(authServiceProvider).currentUser?.uid;
+      if (userId == null) throw Exception('Please login to book a ride');
+      
+      final user = await ref.read(databaseServiceProvider).getUser(userId);
+      if (user == null) throw Exception('User not found');
+
+      // Handle payment based on selected method
+      bool paymentSuccess = false;
+      
+      if (_paymentMethod == 'wallet') {
+        // Check wallet balance
+        if (user.walletBalance < _ridePrice) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Insufficient balance. Your balance: ₦${user.walletBalance.toStringAsFixed(0)}'),
+                action: SnackBarAction(
+                  label: 'Add Funds',
+                  onPressed: () => context.push('/add-card'),
+                ),
+              ),
+            );
+          }
+          return;
+        }
+        paymentSuccess = true;
+      } else {
+        // Card payment via Paystack
+        final paystackService = ref.read(paystackServiceProvider);
+        paymentSuccess = await paystackService.chargeCard(
+          context: context,
+          amount: _ridePrice,
+          email: user.email,
+          onSuccess: (ref) => debugPrint('Ride payment completed: $ref'),
+          onCancel: (ref) => debugPrint('Ride payment cancelled: $ref'),
+        );
+      }
+
+      if (!paymentSuccess) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      // Deduct from wallet if wallet payment
+      if (_paymentMethod == 'wallet') {
+        await ref.read(databaseServiceProvider).addWalletTransaction(
+          userId: userId,
+          amount: -_ridePrice,
+          type: 'ride_payment',
+          description: 'Ride to ${_destinationController.text.isEmpty ? 'Victoria Island' : _destinationController.text}',
+        );
+      }
+
+      // Mock coordinates
       final mockDestination = mapbox.Point(coordinates: mapbox.Position(3.4241, 6.4281)); 
-      final mockPickup = mapbox.Point(coordinates: mapbox.Position(3.3792, 6.5244)); // Mock pickup
+      final mockPickup = mapbox.Point(coordinates: mapbox.Position(3.3792, 6.5244));
 
       final ride = RideModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: ref.read(authServiceProvider).currentUser?.uid ?? 'guest',
+        userId: userId,
         pickupLocation: GeoPoint(mockPickup.coordinates.lat.toDouble(), mockPickup.coordinates.lng.toDouble()),
         dropoffLocation: GeoPoint(mockDestination.coordinates.lat.toDouble(), mockDestination.coordinates.lng.toDouble()),
-        pickupAddress: 'Current Location', // Should be real address
+        pickupAddress: 'Current Location',
         dropoffAddress: _destinationController.text.isEmpty ? 'Victoria Island' : _destinationController.text,
-        price: 2500,
+        price: _ridePrice,
         createdAt: DateTime.now(),
         status: 'pending',
       );
@@ -50,13 +105,13 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
           extra: {
             'destinationName': ride.dropoffAddress,
             'destinationLocation': mockDestination,
-            'rideId': ride.id, // Pass ride ID for tracking
+            'rideId': ride.id,
           },
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error booking ride: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -173,21 +228,147 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
                     
                     const SizedBox(height: 24),
                     
-                    // Ride Options (Only show if expanded or user interacts - simplified for now)
-                    // For now, just a big "Book Ride" button if we want to simulate the flow
-                     SizedBox(
+                    // Price Display
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Estimated Fare', style: TextStyle(color: Colors.white70)),
+                          Text(
+                            '₦${_ridePrice.toStringAsFixed(0)}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Payment Method Selector
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _paymentMethod = 'wallet'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              decoration: BoxDecoration(
+                                color: _paymentMethod == 'wallet' 
+                                  ? AppTheme.primaryColor.withValues(alpha: 0.2)
+                                  : Colors.white10,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _paymentMethod == 'wallet' 
+                                    ? AppTheme.primaryColor 
+                                    : Colors.white12,
+                                  width: _paymentMethod == 'wallet' ? 2 : 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.account_balance_wallet,
+                                    color: _paymentMethod == 'wallet' 
+                                      ? AppTheme.primaryColor 
+                                      : Colors.white70,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Wallet',
+                                    style: TextStyle(
+                                      color: _paymentMethod == 'wallet' 
+                                        ? AppTheme.primaryColor 
+                                        : Colors.white70,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _paymentMethod = 'card'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              decoration: BoxDecoration(
+                                color: _paymentMethod == 'card' 
+                                  ? AppTheme.primaryColor.withValues(alpha: 0.2)
+                                  : Colors.white10,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _paymentMethod == 'card' 
+                                    ? AppTheme.primaryColor 
+                                    : Colors.white12,
+                                  width: _paymentMethod == 'card' ? 2 : 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.credit_card,
+                                    color: _paymentMethod == 'card' 
+                                      ? AppTheme.primaryColor 
+                                      : Colors.white70,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Card',
+                                    style: TextStyle(
+                                      color: _paymentMethod == 'card' 
+                                        ? AppTheme.primaryColor 
+                                        : Colors.white70,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Book Ride Button
+                    SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _isLoading ? null : _bookRide,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppTheme.primaryColor,
                           foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         child: _isLoading 
                           ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                          : const Text('BOOK RIDE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(_paymentMethod == 'wallet' ? Icons.account_balance_wallet : Icons.credit_card, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'PAY ₦${_ridePrice.toStringAsFixed(0)} & BOOK',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                ),
+                              ],
+                            ),
                       ),
                     ),
                   ],
