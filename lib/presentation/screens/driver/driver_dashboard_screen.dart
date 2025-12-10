@@ -5,6 +5,7 @@ import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/app_drawer.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
+import 'package:fast_delivery/presentation/common/background_orbs.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -27,16 +28,15 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
   bool _isAccepting = false;
   int _selectedIndex = 0; // For NavigationRail
   
-  // For the earnings chart mock data
+  // For the earnings chart - matching green theme
   final List<Color> gradientColors = [
-    const Color(0xFF6C63FF), // Purple
-    const Color(0xFF00E5FF), // Cyan
+    AppTheme.primaryColor,
+    const Color(0xFF00E5FF), // Cyan accent
   ];
 
   @override
   void initState() {
     super.initState();
-    // Removed _checkActiveRide() to fix "glitch" of auto-navigating on startup
   }
 
   @override
@@ -48,202 +48,242 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
     return Scaffold(
       key: _scaffoldKey,
       drawer: const AppDrawer(),
-      backgroundColor: const Color(0xFFF8F9FE), // Light Blue-ish White
-      body: ridesAsync.when(
-        data: (rides) {
-          // Check for courier requests as well
-          final couriers = couriersAsync.maybeWhen(
-            data: (data) => data,
-            orElse: () => <CourierModel>[],
-          );
-          
-          // Debug output
-          debugPrint('DriverDashboard: isOnline=$isOnline, rides=${rides.length}, couriers=${couriers.length}');
-          
-          // Only switch to Request View if online AND there are pending requests
-          if (isOnline) {
-            if (rides.isNotEmpty) {
-              debugPrint('DriverDashboard: Showing ride request');
-              return _buildRequestView(rides.first);
-            } else if (couriers.isNotEmpty) {
-              debugPrint('DriverDashboard: Showing courier request');
-              return _buildCourierRequestView(couriers.first);
-            }
-          }
-          return _buildDashboardView(isOnline);
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => _buildDashboardView(isOnline), // Fallback
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: AppTheme.backgroundGradient,
+        ),
+        child: Stack(
+          children: [
+            const BackgroundOrbs(),
+            ridesAsync.when(
+              data: (rides) {
+                final couriers = couriersAsync.maybeWhen(
+                  data: (data) => data,
+                  orElse: () => <CourierModel>[],
+                );
+                
+                debugPrint('DriverDashboard: isOnline=$isOnline, rides=${rides.length}, couriers=${couriers.length}');
+                
+                if (isOnline) {
+                  if (rides.isNotEmpty) {
+                    debugPrint('DriverDashboard: Showing ride request');
+                    return _buildRequestView(rides.first);
+                  } else if (couriers.isNotEmpty) {
+                    debugPrint('DriverDashboard: Showing courier request');
+                    return _buildCourierRequestView(couriers.first);
+                  }
+                }
+                return _buildDashboardView(isOnline);
+              },
+              loading: () => Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)),
+              error: (err, stack) => _buildDashboardView(isOnline),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // --- REFERENCE IMAGE 1: DASHBOARD / STATS ---
+  // --- MODERN DARK DASHBOARD ---
   Widget _buildDashboardView(bool isOnline) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    
-    return Stack(
-      children: [
-        Row(
-          children: [
-            // Sidebar (Navigation Rail) - Matches the "Purple Sidebar" description
-            NavigationRail(
-              selectedIndex: _selectedIndex,
-              onDestinationSelected: (int index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-                // Navigate to appropriate screens
-                switch (index) {
-                  case 0: // Home - stay here
-                    break;
-                  case 1: // Wallet
-                    context.push('/wallet');
-                    break;
-                  case 2: // Trips/History
-                    context.push('/history');
-                    break;
-                  case 3: // Settings
-                    context.push('/settings');
-                    break;
-                }
-              },
-              backgroundColor: const Color(0xFF6C63FF), // FastPro Purple
-              selectedIconTheme: const IconThemeData(color: Colors.white),
-              unselectedIconTheme: IconThemeData(color: Colors.white.withValues(alpha: 0.5)),
-              selectedLabelTextStyle: const TextStyle(color: Colors.white, fontSize: 10),
-              unselectedLabelTextStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 10),
-              labelType: NavigationRailLabelType.all,
-              minWidth: 70,
-              groupAlignment: -0.8, // Top aligned
-              leading: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: Icon(FontAwesomeIcons.bolt, color: Colors.white, size: 28), // Logo
-              ),
-              destinations: const [
-                NavigationRailDestination(
-                  icon: Icon(Icons.dashboard_outlined, size: 22),
-                  selectedIcon: Icon(Icons.dashboard, size: 22),
-                  label: Text('Home'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.wallet_outlined, size: 22),
-                  selectedIcon: Icon(Icons.wallet, size: 22),
-                  label: Text('Wallet'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.history_outlined, size: 22),
-                  selectedIcon: Icon(Icons.history, size: 22),
-                  label: Text('Trips'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.settings_outlined, size: 22),
-                  selectedIcon: Icon(Icons.settings, size: 22),
-                  label: Text('Settings'),
-                ),
-              ],
-            ),
-
-            // Main Content
-            Expanded(
+    return SafeArea(
+      child: Column(
+        children: [
+          // Top Bar with menu and status toggle
+          _buildDashboardAppBar(isOnline),
+          
+          // Scrollable Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Top Bar
-                  _buildDashboardAppBar(isOnline),
+                  // Earnings Card
+                  _buildEarningsChartCard()
+                      .animate()
+                      .fadeIn(duration: 400.ms)
+                      .slideY(begin: 0.1, end: 0),
+                  const SizedBox(height: 24),
                   
-                  // Scrollable Content
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildEarningsChartCard(),
-                          const SizedBox(height: 24),
-                          Text(
-                            'Stats Overview',
-                            style: GoogleFonts.outfit(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          _buildStatsGrid(),
-                        ],
-                      ),
+                  // Stats Title
+                  Text(
+                    'Stats Overview',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  
+                  // Stats Grid
+                  _buildStatsGrid()
+                      .animate()
+                      .fadeIn(delay: 200.ms, duration: 400.ms)
+                      .slideY(begin: 0.1, end: 0),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Quick Actions
+                  Text(
+                    'Quick Actions',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Quick action buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildQuickActionButton(
+                          icon: Icons.wallet,
+                          label: 'Wallet',
+                          onTap: () => context.push('/wallet'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickActionButton(
+                          icon: Icons.history,
+                          label: 'Trips',
+                          onTap: () => context.push('/history'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickActionButton(
+                          icon: Icons.settings,
+                          label: 'Settings',
+                          onTap: () => context.push('/settings'),
+                        ),
+                      ),
+                    ],
+                  ).animate().fadeIn(delay: 400.ms, duration: 400.ms),
                 ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildQuickActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppTheme.neomorphicShadow(),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.05),
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: AppTheme.primaryColor, size: 24),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
-        // Mobile menu FAB for drawer access
-        if (isMobile)
-          Positioned(
-            top: 50,
-            left: 16,
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF6C63FF),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 8,
-                  ),
-                ],
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
-                onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-              ),
-            ),
-          ),
-      ],
+      ),
     );
   }
 
   Widget _buildDashboardAppBar(bool isOnline) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Expanded(
-            child: Text(
-              'Driver Mode',
-              style: GoogleFonts.outfit(
-                color: Colors.black,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-              overflow: TextOverflow.ellipsis,
+          // Menu Button
+          Container(
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: AppTheme.neomorphicShadow(),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
             ),
           ),
-          const SizedBox(width: 8),
-          // Compact toggle
+          const SizedBox(width: 16),
+          // Title
+          Expanded(
+            child: Text(
+              'Driver Dashboard',
+              style: GoogleFonts.spaceGrotesk(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          // Online/Offline Toggle
           GestureDetector(
             onTap: () => ref.read(driverOnlineProvider.notifier).toggle(),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: isOnline ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: isOnline ? Colors.green : Colors.red),
+                color: isOnline 
+                    ? AppTheme.primaryColor.withValues(alpha: 0.2) 
+                    : Colors.red.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(
+                  color: isOnline ? AppTheme.primaryColor : Colors.red,
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: (isOnline ? AppTheme.primaryColor : Colors.red).withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    spreadRadius: -2,
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.circle, size: 8, color: isOnline ? Colors.green : Colors.red),
-                  const SizedBox(width: 6),
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: isOnline ? AppTheme.primaryColor : Colors.red,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isOnline ? AppTheme.primaryColor : Colors.red).withValues(alpha: 0.5),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   Text(
-                    isOnline ? 'ON' : 'OFF',
-                    style: TextStyle(
-                      color: isOnline ? Colors.green : Colors.red,
+                    isOnline ? 'ONLINE' : 'OFFLINE',
+                    style: GoogleFonts.spaceGrotesk(
+                      color: isOnline ? AppTheme.primaryColor : Colors.red,
                       fontWeight: FontWeight.bold,
-                      fontSize: 11,
+                      fontSize: 12,
+                      letterSpacing: 1,
                     ),
                   ),
                 ],
@@ -257,19 +297,16 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
 
   Widget _buildEarningsChartCard() {
     return Container(
-      height: 320,
+      height: 280,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6C63FF).withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        boxShadow: AppTheme.neomorphicShadow(),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.05),
+        ),
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -281,30 +318,50 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
                 children: [
                   Text(
                     'Available Balance',
-                    style: TextStyle(color: Colors.grey[400], fontSize: 14),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '₦ 4,336',
-                    style: GoogleFonts.outfit(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: Colors.white54,
+                      fontSize: 13,
                     ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '₦',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.primaryColor,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '4,336',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF6C63FF).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                  ),
                 ),
-                child: const Icon(Icons.show_chart, color: Color(0xFF6C63FF)),
+                child: Icon(Icons.trending_up, color: AppTheme.primaryColor, size: 24),
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           Expanded(
             child: LineChart(
               LineChartData(
@@ -328,13 +385,13 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
                     ],
                     isCurved: true,
                     gradient: LinearGradient(colors: gradientColors),
-                    barWidth: 6,
+                    barWidth: 4,
                     isStrokeCapRound: true,
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
-                        colors: gradientColors.map((color) => color.withValues(alpha: 0.2)).toList(),
+                        colors: gradientColors.map((color) => color.withValues(alpha: 0.15)).toList(),
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
@@ -350,70 +407,62 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
   }
 
   Widget _buildStatsGrid() {
-    // Responsive grid
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 500 ? 2 : 1; 
-        // Keeping it 2 collumns max for cards to be wide and informative
-        
-        return GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.2, // Taller cards to prevent overflow
-          children: [
-            _buildStatCard('Trips', '34', Icons.directions_car, Colors.blue),
-            _buildStatCard('Time', '5h 12m', Icons.timer, Colors.orange),
-            _buildStatCard('Rating', '4.9', Icons.star, Colors.amber),
-            _buildStatCard('Accept', '94%', Icons.check_circle, Colors.green),
-          ],
-        );
-      },
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1.3,
+      children: [
+        _buildStatCard('Trips', '34', Icons.directions_car, const Color(0xFF4FC3F7)),
+        _buildStatCard('Time', '5h 12m', Icons.schedule, const Color(0xFFFF8A65)),
+        _buildStatCard('Rating', '4.9', Icons.star_rounded, const Color(0xFFFFD54F)),
+        _buildStatCard('Accept', '94%', Icons.check_circle, AppTheme.primaryColor),
+      ],
     );
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: AppTheme.neomorphicShadow(),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.05),
+        ),
       ),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(icon, color: color, size: 20),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
           const Spacer(),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              style: GoogleFonts.outfit(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 22,
-              ),
+          Text(
+            value,
+            style: GoogleFonts.spaceGrotesk(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
             ),
           ),
+          const SizedBox(height: 2),
           Text(
             title,
-            style: GoogleFonts.outfit(
-              color: Colors.grey[500],
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.white54,
               fontWeight: FontWeight.w500,
-              fontSize: 12,
+              fontSize: 13,
             ),
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
