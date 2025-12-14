@@ -96,6 +96,19 @@ class DatabaseService {
       'status': status,
       'riderId': riderId,
     };
+    
+    // Set timestamps based on status transition
+    final now = Timestamp.now();
+    if (status == 'accepted') {
+      data['acceptedAt'] = now;
+    } else if (status == 'arrived') {
+      data['arrivedAt'] = now;
+    } else if (status == 'in_transit') {
+      data['tripStartedAt'] = now;
+    } else if (status == 'delivered') {
+      data['tripEndedAt'] = now;
+    }
+    
     if (driverLocation != null) {
       data['driverLocation'] = driverLocation;
     }
@@ -118,7 +131,7 @@ class DatabaseService {
       final snapshot = await _db
           .collection('couriers')
           .where('userId', isEqualTo: userId)
-          .where('status', whereIn: ['pending', 'accepted', 'picked_up'])
+          .where('status', whereIn: ['pending', 'accepted', 'arrived', 'in_transit'])
           .orderBy('createdAt', descending: true)
           .limit(1)
           .get();
@@ -135,7 +148,7 @@ class DatabaseService {
       
       for (final doc in snapshot.docs) {
         final courier = CourierModel.fromMap(doc.data(), doc.id);
-        if (['pending', 'accepted', 'picked_up'].contains(courier.status)) {
+        if (['pending', 'accepted', 'arrived', 'in_transit'].contains(courier.status)) {
           return courier;
         }
       }

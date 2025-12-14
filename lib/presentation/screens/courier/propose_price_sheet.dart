@@ -5,10 +5,12 @@ import 'package:go_router/go_router.dart';
 
 class ProposePriceSheet extends StatefulWidget {
   final Function(Map<String, dynamic>) onSave;
+  final double recommendedPrice;
 
   const ProposePriceSheet({
     super.key,
     required this.onSave,
+    this.recommendedPrice = 1500.0, // Default recommended price
   });
 
   @override
@@ -18,12 +20,37 @@ class ProposePriceSheet extends StatefulWidget {
 class _ProposePriceSheetState extends State<ProposePriceSheet> {
   bool _receiverPays = false;
   String _paymentMethod = 'Cash'; // Cash or Transfer
-  final _amountController = TextEditingController();
+  late double _currentPrice;
+  late double _minPrice; // Recommended - 200 (max reduction)
+  late double _maxPrice; // Recommended + 1000 (max addition)
+  
+  @override
+  void initState() {
+    super.initState();
+    _currentPrice = widget.recommendedPrice;
+    _minPrice = widget.recommendedPrice - 200; // Max reduction is 200
+    _maxPrice = widget.recommendedPrice + 1000; // Max addition is 1000
+  }
+
+  void _adjustPrice(double amount) {
+    setState(() {
+      final newPrice = _currentPrice + amount;
+      // Can't go below minPrice (recommended - 200)
+      // Can't go above maxPrice (recommended + 1000)
+      if (newPrice >= _minPrice && newPrice <= _maxPrice) {
+        _currentPrice = newPrice;
+      } else if (newPrice < _minPrice) {
+        _currentPrice = _minPrice;
+      } else if (newPrice > _maxPrice) {
+        _currentPrice = _maxPrice;
+      }
+    });
+  }
 
   void _handleSave() {
-    final price = double.tryParse(_amountController.text) ?? 0.0;
     final data = {
-      'price': price,
+      'price': _currentPrice,
+      'recommendedPrice': widget.recommendedPrice,
       'paymentMethod': _paymentMethod,
       'receiverPays': _receiverPays,
     };
@@ -33,6 +60,9 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final canDecrease = _currentPrice > _minPrice;
+    final canIncrease = _currentPrice < _maxPrice;
+    
     return Container(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -52,7 +82,7 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const SizedBox(width: 40), // Balance close button
+                  const SizedBox(width: 40),
                   const Text(
                     'Propose your price',
                     style: TextStyle(
@@ -67,34 +97,73 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
                   ),
                 ],
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
 
-              // Amount Input
-              IntrinsicWidth(
-                child: TextField(
-                  controller: _amountController,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  decoration: const InputDecoration(
-                    prefixText: 'NGN ',
-                    prefixStyle: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white38,
+              // Recommended Price Display
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.lightbulb_outline, 
+                      color: AppTheme.primaryColor, 
+                      size: 20,
                     ),
-                    border: InputBorder.none,
-                    hintText: '0',
-                    hintStyle: TextStyle(color: Colors.white12),
-                  ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Recommended: ₦${widget.recommendedPrice.toStringAsFixed(0)}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(height: 24),
+
+              // Price Display with +/- Buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Decrease Button
+                  _buildAdjustButton(
+                    icon: Icons.remove,
+                    onPressed: canDecrease ? () => _adjustPrice(-100) : null,
+                    isEnabled: canDecrease,
+                  ),
+                  
+                  const SizedBox(width: 20),
+                  
+                  // Current Price Display
+                  Text(
+                    '₦${_currentPrice.toStringAsFixed(0)}',
+                    style: const TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  
+                  const SizedBox(width: 20),
+                  
+                  // Increase Button
+                  _buildAdjustButton(
+                    icon: Icons.add,
+                    onPressed: canIncrease ? () => _adjustPrice(100) : null,
+                    isEnabled: canIncrease,
+                  ),
+                ],
+              ),
               
-              const SizedBox(height: 30),
+              const SizedBox(height: 24),
 
               // Payment Method
               Container(
@@ -173,16 +242,16 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
                 child: ElevatedButton(
                   onPressed: _handleSave,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor, // Lime green
+                    backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.black,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Done',
-                    style: TextStyle(
+                  child: Text(
+                    'Confirm ₦${_currentPrice.toStringAsFixed(0)}',
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -196,4 +265,35 @@ class _ProposePriceSheetState extends State<ProposePriceSheet> {
       ),
     );
   }
+
+  Widget _buildAdjustButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+    required bool isEnabled,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: isEnabled 
+            ? AppTheme.primaryColor.withValues(alpha: 0.2)
+            : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isEnabled 
+              ? AppTheme.primaryColor.withValues(alpha: 0.5)
+              : Colors.white10,
+          ),
+        ),
+        child: Icon(
+          icon,
+          color: isEnabled ? AppTheme.primaryColor : Colors.white24,
+          size: 28,
+        ),
+      ),
+    );
+  }
 }
+

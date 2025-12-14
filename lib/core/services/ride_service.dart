@@ -13,7 +13,14 @@ class RideService {
 
   // Create a new ride request
   Future<void> createRide(RideModel ride) async {
-    await _ridesCollection.doc(ride.id).set(ride.toMap());
+    debugPrint('RideService.createRide: Creating ride with id=${ride.id}');
+    try {
+      await _ridesCollection.doc(ride.id).set(ride.toMap());
+      debugPrint('RideService.createRide: SUCCESS - ride created');
+    } catch (e) {
+      debugPrint('RideService.createRide: ERROR - $e');
+      rethrow;
+    }
   }
 
   // Stream of available rides (status == 'pending')
@@ -66,11 +73,16 @@ class RideService {
 
   // Stream a specific ride by ID (for tracking)
   Stream<RideModel?> streamRide(String rideId) {
+    debugPrint('RideService.streamRide: Starting stream for rideId=$rideId');
     return _ridesCollection.doc(rideId).snapshots().map((doc) {
+      debugPrint('RideService.streamRide: doc.exists=${doc.exists}, doc.id=${doc.id}');
       if (!doc.exists) {
+        debugPrint('RideService.streamRide: Document does not exist!');
         return null; // Return null instead of throwing exception
       }
-      return RideModel.fromMap(doc.data()!, doc.id);
+      final ride = RideModel.fromMap(doc.data()!, doc.id);
+      debugPrint('RideService.streamRide: Ride status=${ride.status}');
+      return ride;
     });
   }
 

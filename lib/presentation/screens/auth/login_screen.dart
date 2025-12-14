@@ -163,7 +163,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     // Validate form
-    if (!_formKey.currentState!.validate()) {
+    final formState = _formKey.currentState;
+    if (formState == null || !formState.validate()) {
       return;
     }
     
@@ -302,9 +303,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           
           // Main content
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
                 children: [
                   const SizedBox(height: 60),
                   
@@ -533,6 +536,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
           ),
+        ),
         ],
       ),
       floatingActionButton: FloatingActionButton.small(

@@ -25,21 +25,27 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
   final double _ridePrice = 2500.0;
 
   Future<void> _bookRide() async {
+    debugPrint('BookingSheet: _bookRide START');
     setState(() => _isLoading = true);
 
     try {
       final userId = ref.read(authServiceProvider).currentUser?.uid;
+      debugPrint('BookingSheet: userId=$userId');
       if (userId == null) throw Exception('Please login to book a ride');
       
       final user = await ref.read(databaseServiceProvider).getUser(userId);
+      debugPrint('BookingSheet: user=${user?.email}');
       if (user == null) throw Exception('User not found');
 
       // Handle payment based on selected method
       bool paymentSuccess = false;
+      debugPrint('BookingSheet: paymentMethod=$_paymentMethod');
       
       if (_paymentMethod == 'wallet') {
         // Check wallet balance
+        debugPrint('BookingSheet: walletBalance=${user.walletBalance}, ridePrice=$_ridePrice');
         if (user.walletBalance < _ridePrice) {
+          debugPrint('BookingSheet: INSUFFICIENT BALANCE');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -54,6 +60,7 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
           return;
         }
         paymentSuccess = true;
+        debugPrint('BookingSheet: paymentSuccess=true (wallet)');
       } else {
         // Card payment via Paystack
         final paystackService = ref.read(paystackServiceProvider);
@@ -64,27 +71,33 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
           onSuccess: (ref) => debugPrint('Ride payment completed: $ref'),
           onCancel: (ref) => debugPrint('Ride payment cancelled: $ref'),
         );
+        debugPrint('BookingSheet: paymentSuccess=$paymentSuccess (card)');
       }
 
       if (!paymentSuccess) {
+        debugPrint('BookingSheet: PAYMENT FAILED - returning');
         if (mounted) setState(() => _isLoading = false);
         return;
       }
 
       // Deduct from wallet if wallet payment
       if (_paymentMethod == 'wallet') {
+        debugPrint('BookingSheet: Deducting from wallet...');
         await ref.read(databaseServiceProvider).addWalletTransaction(
           userId: userId,
           amount: -_ridePrice,
           type: 'ride_payment',
           description: 'Ride to ${_destinationController.text.isEmpty ? 'Victoria Island' : _destinationController.text}',
         );
+        debugPrint('BookingSheet: Wallet deduction complete!');
       }
 
       // Mock coordinates
+      debugPrint('BookingSheet: Creating mock coordinates...');
       final mockDestination = mapbox.Point(coordinates: mapbox.Position(3.4241, 6.4281)); 
       final mockPickup = mapbox.Point(coordinates: mapbox.Position(3.3792, 6.5244));
 
+      debugPrint('BookingSheet: Creating RideModel...');
       final ride = RideModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         userId: userId,
@@ -97,11 +110,15 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         status: 'pending',
       );
 
+      debugPrint('BookingSheet: Calling createRide with id=${ride.id}...');
       await ref.read(rideServiceProvider).createRide(ride);
+      debugPrint('BookingSheet: createRide completed!');
 
       if (mounted) {
+        debugPrint('BookingSheet: Navigating to tracking with rideId=${ride.id}');
+        // Use query params for web URL persistence, extra for full data
         context.go(
-          '/tracking', 
+          '/tracking?rideId=${ride.id}&dest=${Uri.encodeComponent(ride.dropoffAddress)}', 
           extra: {
             'destinationName': ride.dropoffAddress,
             'destinationLocation': mockDestination,
@@ -110,6 +127,7 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         );
       }
     } catch (e) {
+      debugPrint('BookingSheet: ERROR - $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
       }

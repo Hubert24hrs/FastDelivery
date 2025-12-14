@@ -586,14 +586,16 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
 
   String _getCourierStatusText(String status) {
     if (status == 'accepted') return 'Heading to Pickup';
-    if (status == 'picked_up') return 'Heading to Dropoff';
+    if (status == 'arrived') return 'Arrived at Pickup';
+    if (status == 'in_transit') return 'Heading to Dropoff';
     if (status == 'delivered') return 'Package Delivered';
     return 'Completed';
   }
 
   String _getNextCourierButtonText(String status) {
-    if (status == 'accepted') return 'CONFIRM PICKUP';
-    if (status == 'picked_up') return 'CONFIRM DELIVERY';
+    if (status == 'accepted') return 'I ARRIVED';
+    if (status == 'arrived') return 'START TRIP';
+    if (status == 'in_transit') return 'CONFIRM DELIVERY';
     return 'COMPLETE';
   }
 
@@ -602,9 +604,12 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
     
     try {
       String nextStatus = '';
+      // New status flow: accepted → arrived → in_transit → delivered
       if (courier.status == 'accepted') {
-        nextStatus = 'picked_up';
-      } else if (courier.status == 'picked_up') {
+        nextStatus = 'arrived';
+      } else if (courier.status == 'arrived') {
+        nextStatus = 'in_transit';
+      } else if (courier.status == 'in_transit') {
         nextStatus = 'delivered';
       }
 

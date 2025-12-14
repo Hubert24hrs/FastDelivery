@@ -13,8 +13,15 @@ class CourierModel {
   final String receiverName;
   final String receiverPhone;
   final double price;
-  final String status; // 'pending', 'accepted', 'picked_up', 'delivered', 'cancelled'
+  final double recommendedPrice; // System calculated recommended price
+  final String status; // 'pending', 'accepted', 'arrived', 'in_transit', 'delivered', 'cancelled'
   final DateTime createdAt;
+  
+  // Activity Timeline Timestamps
+  final DateTime? acceptedAt;    // When driver accepts the offer
+  final DateTime? arrivedAt;     // When driver arrives at pickup
+  final DateTime? tripStartedAt; // When trip actually begins
+  final DateTime? tripEndedAt;   // When trip ends (delivered)
 
   final List<String> stops;
   final List<GeoPoint> stopLocations;
@@ -32,8 +39,13 @@ class CourierModel {
     required this.receiverName,
     required this.receiverPhone,
     required this.price,
+    this.recommendedPrice = 0.0,
     this.status = 'pending',
     required this.createdAt,
+    this.acceptedAt,
+    this.arrivedAt,
+    this.tripStartedAt,
+    this.tripEndedAt,
     this.stops = const [],
     this.stopLocations = const [],
   });
@@ -52,8 +64,13 @@ class CourierModel {
       receiverName: data['receiverName'] ?? '',
       receiverPhone: data['receiverPhone'] ?? '',
       price: (data['price'] ?? 0.0).toDouble(),
+      recommendedPrice: (data['recommendedPrice'] ?? 0.0).toDouble(),
       status: data['status'] ?? 'pending',
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+      acceptedAt: data['acceptedAt'] != null ? (data['acceptedAt'] as Timestamp).toDate() : null,
+      arrivedAt: data['arrivedAt'] != null ? (data['arrivedAt'] as Timestamp).toDate() : null,
+      tripStartedAt: data['tripStartedAt'] != null ? (data['tripStartedAt'] as Timestamp).toDate() : null,
+      tripEndedAt: data['tripEndedAt'] != null ? (data['tripEndedAt'] as Timestamp).toDate() : null,
       stops: List<String>.from(data['stops'] ?? []),
       stopLocations: List<GeoPoint>.from(data['stopLocations'] ?? []),
     );
@@ -72,8 +89,13 @@ class CourierModel {
       'receiverName': receiverName,
       'receiverPhone': receiverPhone,
       'price': price,
+      'recommendedPrice': recommendedPrice,
       'status': status,
       'createdAt': Timestamp.fromDate(createdAt),
+      'acceptedAt': acceptedAt != null ? Timestamp.fromDate(acceptedAt!) : null,
+      'arrivedAt': arrivedAt != null ? Timestamp.fromDate(arrivedAt!) : null,
+      'tripStartedAt': tripStartedAt != null ? Timestamp.fromDate(tripStartedAt!) : null,
+      'tripEndedAt': tripEndedAt != null ? Timestamp.fromDate(tripEndedAt!) : null,
       'stops': stops,
       'stopLocations': stopLocations,
     };

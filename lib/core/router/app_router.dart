@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/utils/role_guard.dart';
 import 'package:fast_delivery/core/utils/router_utils.dart';
@@ -176,10 +177,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/tracking',
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
+          // Support both extra (for in-app navigation) and query params (for web URL persistence)
+          final rideId = extra?['rideId'] ?? state.uri.queryParameters['rideId'];
+          final destinationName = extra?['destinationName'] ?? state.uri.queryParameters['dest'];
+          debugPrint('Router /tracking: rideId=$rideId, from extra=${extra?['rideId']}, from query=${state.uri.queryParameters['rideId']}');
           return TrackingScreen(
-            destinationName: extra?['destinationName'],
+            destinationName: destinationName,
             destinationLocation: extra?['destinationLocation'],
-            rideId: extra?['rideId'],
+            rideId: rideId,
           );
         },
       ),

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -160,8 +161,8 @@ class _CourierTrackingScreenState extends ConsumerState<CourierTrackingScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Progress Indicator
-            _buildProgressIndicator(status),
+            // Activity Timeline
+            _buildActivityTimeline(courier),
             const SizedBox(height: 24),
 
             // Package Info
@@ -178,6 +179,8 @@ class _CourierTrackingScreenState extends ConsumerState<CourierTrackingScreen> {
                   _buildInfoRow(Icons.my_location, 'From', courier.pickupAddress),
                   const SizedBox(height: 12),
                   _buildInfoRow(Icons.flag, 'To', courier.dropoffAddress),
+                  const SizedBox(height: 12),
+                  _buildInfoRow(Icons.attach_money, 'Price', '₦${courier.price.toStringAsFixed(0)}'),
                 ],
               ),
             ),
@@ -268,67 +271,186 @@ class _CourierTrackingScreenState extends ConsumerState<CourierTrackingScreen> {
     );
   }
 
-  Widget _buildProgressIndicator(String status) {
-    final int step;
-    switch (status) {
-      case 'pending': step = 0; break;
-      case 'accepted': step = 1; break;
-      case 'picked_up': step = 2; break;
-      case 'delivered': step = 3; break;
-      default: step = 0;
-    }
-
-    return Row(
-      children: [
-        _buildProgressStep(0, step, 'Order', Icons.receipt_long),
-        _buildProgressLine(step > 0),
-        _buildProgressStep(1, step, 'Pickup', Icons.storefront),
-        _buildProgressLine(step > 1),
-        _buildProgressStep(2, step, 'Transit', Icons.local_shipping),
-        _buildProgressLine(step > 2),
-        _buildProgressStep(3, step, 'Delivered', Icons.check_circle),
-      ],
-    );
-  }
-
-  Widget _buildProgressStep(int index, int currentStep, String label, IconData icon) {
-    final isActive = index <= currentStep;
-    final isCurrent = index == currentStep;
-
-    return Expanded(
+  Widget _buildActivityTimeline(CourierModel courier) {
+    final timeFormat = DateFormat('HH:mm');
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isActive ? AppTheme.primaryColor : Colors.white12,
-              shape: BoxShape.circle,
-              border: isCurrent ? Border.all(color: AppTheme.primaryColor, width: 2) : null,
-            ),
-            child: Icon(
-              icon,
-              color: isActive ? Colors.black : Colors.white38,
-              size: 16,
+          const Text(
+            'Activity Timeline',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: isActive ? Colors.white : Colors.white38,
-              fontSize: 10,
-            ),
+          const SizedBox(height: 16),
+          
+          // Order Placed
+          _buildTimelineItem(
+            icon: Icons.receipt_long,
+            title: 'Order Placed',
+            time: timeFormat.format(courier.createdAt),
+            isCompleted: true,
+            isFirst: true,
+          ),
+          
+          // Driver Accepted
+          _buildTimelineItem(
+            icon: Icons.check_circle,
+            title: 'Driver Accepted',
+            time: courier.acceptedAt != null 
+              ? timeFormat.format(courier.acceptedAt!) 
+              : null,
+            isCompleted: courier.acceptedAt != null,
+          ),
+          
+          // Driver Arrived
+          _buildTimelineItem(
+            icon: Icons.location_on,
+            title: 'Driver Arrived',
+            time: courier.arrivedAt != null 
+              ? timeFormat.format(courier.arrivedAt!) 
+              : null,
+            isCompleted: courier.arrivedAt != null,
+          ),
+          
+          // Trip Started
+          _buildTimelineItem(
+            icon: Icons.directions_car,
+            title: 'Trip Started',
+            time: courier.tripStartedAt != null 
+              ? timeFormat.format(courier.tripStartedAt!) 
+              : null,
+            isCompleted: courier.tripStartedAt != null,
+          ),
+          
+          // Delivered
+          _buildTimelineItem(
+            icon: Icons.flag,
+            title: 'Delivered',
+            time: courier.tripEndedAt != null 
+              ? timeFormat.format(courier.tripEndedAt!) 
+              : null,
+            isCompleted: courier.tripEndedAt != null,
+            isLast: true,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProgressLine(bool isActive) {
-    return Container(
-      height: 2,
-      width: 20,
-      color: isActive ? AppTheme.primaryColor : Colors.white12,
+  Widget _buildTimelineItem({
+    required IconData icon,
+    required String title,
+    String? time,
+    required bool isCompleted,
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Timeline connector and icon
+          SizedBox(
+            width: 40,
+            child: Column(
+              children: [
+                // Top connector line
+                if (!isFirst)
+                  Container(
+                    width: 2,
+                    height: 8,
+                    color: isCompleted ? AppTheme.primaryColor : Colors.white24,
+                  ),
+                // Icon circle
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: isCompleted 
+                      ? AppTheme.primaryColor 
+                      : Colors.white.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isCompleted 
+                        ? AppTheme.primaryColor 
+                        : Colors.white24,
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 14,
+                    color: isCompleted ? Colors.black : Colors.white38,
+                  ),
+                ),
+                // Bottom connector line
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      color: isCompleted ? AppTheme.primaryColor : Colors.white24,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Content
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isCompleted ? Colors.white : Colors.white38,
+                      fontSize: 14,
+                      fontWeight: isCompleted ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                  ),
+                  if (time != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        time,
+                        style: TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    )
+                  else
+                    Text(
+                      'Pending',
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 12,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -354,7 +476,8 @@ class _CourierTrackingScreenState extends ConsumerState<CourierTrackingScreen> {
     switch (status) {
       case 'pending': return Colors.orange;
       case 'accepted': return Colors.blue;
-      case 'picked_up': return AppTheme.primaryColor;
+      case 'arrived': return Colors.purple;
+      case 'in_transit': return AppTheme.primaryColor;
       case 'delivered': return Colors.green;
       default: return Colors.grey;
     }
@@ -364,7 +487,8 @@ class _CourierTrackingScreenState extends ConsumerState<CourierTrackingScreen> {
     switch (status) {
       case 'pending': return Icons.hourglass_empty;
       case 'accepted': return Icons.person;
-      case 'picked_up': return Icons.local_shipping;
+      case 'arrived': return Icons.location_on;
+      case 'in_transit': return Icons.local_shipping;
       case 'delivered': return Icons.check_circle;
       default: return Icons.info;
     }
@@ -374,7 +498,8 @@ class _CourierTrackingScreenState extends ConsumerState<CourierTrackingScreen> {
     switch (status) {
       case 'pending': return 'Finding Rider';
       case 'accepted': return 'Rider Assigned';
-      case 'picked_up': return 'Package in Transit';
+      case 'arrived': return 'Rider Arrived';
+      case 'in_transit': return 'Package in Transit';
       case 'delivered': return 'Delivered!';
       default: return 'Processing';
     }
@@ -384,7 +509,8 @@ class _CourierTrackingScreenState extends ConsumerState<CourierTrackingScreen> {
     switch (status) {
       case 'pending': return 'We\'re finding a dispatch rider nearby';
       case 'accepted': return 'Rider is heading to pickup';
-      case 'picked_up': return 'Your package is on the way';
+      case 'arrived': return 'Rider has arrived at pickup location';
+      case 'in_transit': return 'Your package is on the way';
       case 'delivered': return 'Successfully delivered';
       default: return 'Please wait';
     }

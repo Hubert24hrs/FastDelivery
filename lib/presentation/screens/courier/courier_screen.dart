@@ -28,6 +28,7 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
   // Courier Request Data
   Map<String, dynamic>? _packageDetails;
   double _price = 0.0;
+  double _recommendedPrice = 1500.0; // Default recommended price
   String _dropoffAddress = '';
   String _paymentMethod = 'Cash';
   bool _receiverPays = false;
@@ -43,6 +44,19 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
   void initState() {
     super.initState();
     _fetchCurrentLocation();
+    _calculateRecommendedPrice();
+  }
+
+  void _calculateRecommendedPrice() {
+    // Calculate recommended price based on vehicle type
+    // This is a simplified calculation - in production, use distance-based pricing
+    setState(() {
+      if (_selectedSize == 'Car') {
+        _recommendedPrice = 2500.0;
+      } else {
+        _recommendedPrice = 1500.0; // Motorcycle
+      }
+    });
   }
 
   Future<void> _fetchCurrentLocation() async {
@@ -114,6 +128,7 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
         receiverName: 'Receiver', // Could be added to PackageDetails
         receiverPhone: _packageDetails?['recipientPhone'] ?? '',
         price: _price,
+        recommendedPrice: _recommendedPrice,
         createdAt: DateTime.now(),
         status: 'pending',
       );
@@ -175,6 +190,7 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ProposePriceSheet(
+        recommendedPrice: _recommendedPrice,
         onSave: (data) {
           setState(() {
             _price = data['price'];
@@ -460,7 +476,10 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
   Widget _buildVehicleOption(String label, IconData icon) {
     final isSelected = _selectedSize == label;
     return GestureDetector(
-      onTap: () => setState(() => _selectedSize = label),
+      onTap: () {
+        setState(() => _selectedSize = label);
+        _calculateRecommendedPrice();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
