@@ -2,7 +2,6 @@ import 'package:fast_delivery/core/models/ride_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/services/notification_service.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
-import 'package:fast_delivery/presentation/common/background_orbs.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:fast_delivery/presentation/screens/rating/rating_sheet.dart';
 import 'package:fast_delivery/presentation/screens/tracking/trip_share_sheet.dart';
@@ -11,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -406,6 +406,9 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                               ),
                             ],
                           ),
+
+                          // Activity Timeline
+                          if (ride != null) _buildActivityTimeline(ride),
                         ] else if (status == 'completed') ...[
                           const Icon(Icons.check_circle, color: Colors.green, size: 50),
                           const SizedBox(height: 16),
@@ -568,6 +571,191 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
               foregroundColor: Colors.black,
             ),
             child: const Text('Add to Favorites'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Activity Timeline Widget - similar to courier tracking
+  Widget _buildActivityTimeline(RideModel ride) {
+    final timeFormat = DateFormat('HH:mm');
+    
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Activity Timeline',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Ride Requested
+          _buildTimelineItem(
+            icon: Icons.receipt_long,
+            title: 'Ride Requested',
+            time: timeFormat.format(ride.createdAt),
+            isCompleted: true,
+            isFirst: true,
+          ),
+          
+          // Driver Accepted
+          _buildTimelineItem(
+            icon: Icons.check_circle,
+            title: 'Driver Accepted',
+            time: ride.acceptedAt != null 
+              ? timeFormat.format(ride.acceptedAt!) 
+              : null,
+            isCompleted: ride.acceptedAt != null,
+          ),
+          
+          // Driver Arrived
+          _buildTimelineItem(
+            icon: Icons.location_on,
+            title: 'Driver Arrived',
+            time: ride.arrivedAt != null 
+              ? timeFormat.format(ride.arrivedAt!) 
+              : null,
+            isCompleted: ride.arrivedAt != null,
+          ),
+          
+          // Trip Started
+          _buildTimelineItem(
+            icon: Icons.directions_car,
+            title: 'Trip Started',
+            time: ride.tripStartedAt != null 
+              ? timeFormat.format(ride.tripStartedAt!) 
+              : null,
+            isCompleted: ride.tripStartedAt != null,
+          ),
+          
+          // Completed
+          _buildTimelineItem(
+            icon: Icons.flag,
+            title: 'Arrived at Destination',
+            time: ride.completedAt != null 
+              ? timeFormat.format(ride.completedAt!) 
+              : null,
+            isCompleted: ride.completedAt != null,
+            isLast: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineItem({
+    required IconData icon,
+    required String title,
+    String? time,
+    required bool isCompleted,
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Timeline connector and icon
+          SizedBox(
+            width: 40,
+            child: Column(
+              children: [
+                // Top connector line
+                if (!isFirst)
+                  Container(
+                    width: 2,
+                    height: 8,
+                    color: isCompleted ? AppTheme.primaryColor : Colors.white24,
+                  ),
+                // Icon circle
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: isCompleted 
+                      ? AppTheme.primaryColor 
+                      : Colors.white.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isCompleted 
+                        ? AppTheme.primaryColor 
+                        : Colors.white24,
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 14,
+                    color: isCompleted ? Colors.black : Colors.white38,
+                  ),
+                ),
+                // Bottom connector line
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      color: isCompleted ? AppTheme.primaryColor : Colors.white24,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Content
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isCompleted ? Colors.white : Colors.white38,
+                      fontSize: 14,
+                      fontWeight: isCompleted ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                  ),
+                  if (time != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        time,
+                        style: const TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    )
+                  else
+                    const Text(
+                      'Pending',
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 12,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

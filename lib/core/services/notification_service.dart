@@ -20,64 +20,92 @@ class NotificationService {
   NotificationService(this._ref);
 
   Future<void> initialize() async {
-    // 1. Request Permission
-    NotificationSettings settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
+    try {
+      // 1. Request Permission
+      NotificationSettings settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        debugPrint('User granted permission');
+        
+        // 2. Setup Local Notifications
+        await _setupLocalNotifications();
+
+        // 3. Get Token
+        String? token = await _messaging.getToken();
+        if (token != null) {
+          debugPrint('FCM Token: $token');
+          _saveToken(token);
+        }
+
+        // 4. Handle Foreground Messages
+        FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+          debugPrint('Got a message whilst in the foreground!');
+          debugPrint('Message data: ${message.data}');
+
+          if (message.notification != null) {
+            _showLocalNotification(message);
+          }
+        });
+
+        // 5. Handle Background/Terminated Taps
+        _setupInteractedMessage();
+        
+        // 6. Set Background Handler
+        FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+        // 7. Listen for Token Refresh
+        _messaging.onTokenRefresh.listen(_saveToken);
+
+      } else {
+        debugPrint('User declined or has not accepted permission');
+      }
+    } catch (e) {
+      debugPrint('Error initializing notification service: $e');
+    }
+  }
+
+  Future<void> _setupLocalNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    
+    const DarwinInitializationSettings initializationSettingsDarwin =
+        DarwinInitializationSettings(
+          requestAlertPermission: false, 
+          requestBadgePermission: false, 
+          requestSoundPermission: false,
+        );
+
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsDarwin,
     );
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      debugPrint('User granted permission');
-      
-      // 2. Setup Local Notifications
-      const AndroidInitializationSettings initializationSettingsAndroid =
-          AndroidInitializationSettings('@mipmap/ic_launcher');
-      
-      const DarwinInitializationSettings initializationSettingsDarwin =
-          DarwinInitializationSettings();
-
-      const InitializationSettings initializationSettings = InitializationSettings(
-        android: initializationSettingsAndroid,
-        iOS: initializationSettingsDarwin,
-      );
-
-      await _localNotifications.initialize(
-        initializationSettings,
-        onDidReceiveNotificationResponse: (NotificationResponse response) {
-          if (response.payload != null) {
-            final data = json.decode(response.payload!);
-            _handleNotificationTap(data);
-          }
-        },
-      );
-
-      // 3. Get Token
-      String? token = await _messaging.getToken();
-      if (token != null) {
-        debugPrint('FCM Token: $token');
-        _saveToken(token);
-      }
-
-      // 4. Handle Foreground Messages
-      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        debugPrint('Got a message whilst in the foreground!');
-        debugPrint('Message data: ${message.data}');
-
-        if (message.notification != null) {
-          _showLocalNotification(message);
+    await _localNotifications.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        if (response.payload != null) {
+          final data = json.decode(response.payload!);
+          _handleNotificationTap(data);
         }
-      });
+      },
+    );
 
-      // 5. Handle Background/Terminated Taps
-      _setupInteractedMessage();
-      
-      // 6. Set Background Handler
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    // Create Android Notification Channel
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'high_importance_channel', // id
+      'High Importance Notifications', // title
+      description: 'This channel is used for important notifications.', // description
+      importance: Importance.max,
+    );
 
-    } else {
-      debugPrint('User declined or has not accepted permission');
-    }
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
   }
 
   Future<void> showLocalNotification({
@@ -92,6 +120,7 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
+      color: Color(0xFF00E676), // Green accent
     );
     
     const details = NotificationDetails(
@@ -150,35 +179,29 @@ class NotificationService {
         });
       }
     } else if (data['type'] == 'ride_update') {
-       // Navigate to ride details or map
-       // router.push('/home'); // Or specific ride screen
+       // Navigate to ride details or map based on status
+       // If status is completed, maybe go to rating
+       final status = data['status'];
+       // For now, push to home which will redirect to active ride automatically
+       router.push('/');
     }
   }
 
   Future<void> _saveToken(String token) async {
     final user = _ref.read(authServiceProvider).currentUser;
     if (user != null) {
+      debugPrint('Saving FCM Token to Firestore...');
       await _ref.read(databaseServiceProvider).saveFcmToken(user.uid, token);
+    } else {
+      debugPrint('User not logged in, cannot save token yet.');
     }
   }
 
   // For testing purposes only
   Future<void> testNotification() async {
-    await _localNotifications.show(
-      0,
-      'Test Notification',
-      'This is a test local notification',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'high_importance_channel',
-          'High Importance Notifications',
-          channelDescription: 'This channel is used for important notifications.',
-          importance: Importance.max,
-          priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
-        ),
-        iOS: DarwinNotificationDetails(),
-      ),
+    await showLocalNotification(
+      title: 'Test Notification',
+      body: 'This is a test local notification confirming configuration works.',
       payload: json.encode({'type': 'test'}),
     );
   }
@@ -244,6 +267,7 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
+      color: Color(0xFF00E676),
       playSound: true,
       enableVibration: true,
     );
@@ -324,6 +348,7 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
+      color: Color(0xFF00E676),
       playSound: true,
       enableVibration: true,
     );

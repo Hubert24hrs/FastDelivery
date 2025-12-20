@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:fast_delivery/core/models/user_model.dart';
 import 'package:fast_delivery/core/models/driver_application_model.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/background_orbs.dart';
@@ -37,49 +36,50 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               gradient: AppTheme.backgroundGradient,
             ),
             child: StreamBuilder<QuerySnapshot>(
+              // CHANGED: Query driver_applications instead of users
               stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .where('role', isEqualTo: 'driver')
+                  .collection('driver_applications')
                   .where('status', isEqualTo: 'pending')
                   .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
-            }
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+                }
 
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-            final docs = snapshot.data?.docs ?? [];
+                final docs = snapshot.data?.docs ?? [];
 
-            if (docs.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No pending drivers',
-                  style: TextStyle(color: Colors.white54, fontSize: 16),
-                ),
-              );
-            }
+                if (docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No pending applications',
+                      style: TextStyle(color: Colors.white54, fontSize: 16),
+                    ),
+                  );
+                }
 
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: docs.length,
-              itemBuilder: (context, index) {
-                final data = docs[index].data() as Map<String, dynamic>;
-                final user = UserModel.fromMap(data, docs[index].id);
-                return _buildDriverCard(user);
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final data = docs[index].data() as Map<String, dynamic>;
+                    // CHANGED: Use DriverApplicationModel
+                    final app = DriverApplicationModel.fromMap(data, docs[index].id);
+                    return _buildDriverCard(app);
+                  },
+                );
               },
-            );
-          },
-        ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDriverCard(UserModel user) {
+  Widget _buildDriverCard(DriverApplicationModel app) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: GlassCard(
@@ -93,8 +93,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   CircleAvatar(
                     radius: 24,
                     backgroundColor: Colors.white10,
-                    backgroundImage: user.photoUrl != null ? NetworkImage(user.photoUrl!) : null,
-                    child: user.photoUrl == null ? const Icon(Icons.person, color: Colors.white) : null,
+                    child: const Icon(Icons.person, color: Colors.white),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -102,7 +101,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user.displayName ?? 'Unknown Name',
+                          app.fullName, // CHANGED: Display Name from App
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -110,11 +109,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                           ),
                         ),
                         Text(
-                          user.email,
+                          '${app.vehicleMake} ${app.vehicleModel} (${app.vehicleYear})',
                           style: const TextStyle(color: Colors.white70, fontSize: 14),
                         ),
                         Text(
-                          user.phoneNumber ?? 'No Phone',
+                          app.phoneNumber,
                           style: const TextStyle(color: Colors.white54, fontSize: 12),
                         ),
                       ],
@@ -129,7 +128,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => _updateStatus(user.id, 'rejected'),
+                      onPressed: () => _updateStatus(app.id, 'rejected'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.redAccent,
                         side: const BorderSide(color: Colors.redAccent),
@@ -140,7 +139,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () => _showDriverDocuments(context, user.id, user.displayName ?? 'Driver'),
+                      onPressed: () => _showDriverDocuments(context, app),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.blueAccent,
                         side: const BorderSide(color: Colors.blueAccent),
@@ -151,7 +150,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () => _updateStatus(user.id, 'approved'),
+                      onPressed: () => _updateStatus(app.id, 'approved', app),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
                         foregroundColor: Colors.white,
@@ -168,61 +167,35 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     );
   }
 
-  Future<void> _showDriverDocuments(BuildContext context, String userId, String driverName) async {
+  Future<void> _showDriverDocuments(BuildContext context, DriverApplicationModel app) async {
     showDialog(
       context: context,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final doc = await FirebaseFirestore.instance.collection('driver_applications').doc(userId).get();
-      if (context.mounted) Navigator.pop(context); // Close loading
-
-      if (!doc.exists || !context.mounted) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No documents found')));
-        }
-        return;
-      }
-
-      final app = DriverApplicationModel.fromMap(doc.data()!, doc.id);
-
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => Dialog(
-            backgroundColor: AppTheme.surfaceColor,
-            insetPadding: const EdgeInsets.all(16),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+      builder: (context) => Dialog(
+        backgroundColor: AppTheme.surfaceColor,
+        insetPadding: const EdgeInsets.all(16),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                       Expanded(child: Text('$driverName\'s Documents', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
-                       IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context)),
-                    ],
-                   ),
-                   const SizedBox(height: 16),
-                   _buildDocItem('License', app.licenseUrl),
-                   _buildDocItem('Registration', app.registrationUrl),
-                   _buildDocItem('Insurance', app.insuranceUrl),
-                   _buildDocItem('Permit (Courier)', app.permitUrl),
+                   Expanded(child: Text('${app.fullName}\'s Documents', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold))),
+                   IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context)),
                 ],
-              ),
-            ),
+               ),
+               const SizedBox(height: 16),
+               _buildDocItem('License', app.licenseUrl),
+               _buildDocItem('Registration', app.registrationUrl),
+               _buildDocItem('Insurance', app.insuranceUrl),
+               _buildDocItem('Permit (Courier)', app.permitUrl),
+            ],
           ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    }
+        ),
+      ),
+    );
   }
 
   Widget _buildDocItem(String label, String? url) {
@@ -261,12 +234,31 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     );
   }
 
-  Future<void> _updateStatus(String userId, String status) async {
+  Future<void> _updateStatus(String userId, String status, [DriverApplicationModel? app]) async {
     try {
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({'status': status});
+      final batch = FirebaseFirestore.instance.batch();
+      
+      // 1. Update Application Status
+      final appRef = FirebaseFirestore.instance.collection('driver_applications').doc(userId);
+      batch.update(appRef, {'status': status});
+
+      // 2. If Approved, Update User Role & Details in Users Collection
+      if (status == 'approved' && app != null) {
+        final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
+        batch.update(userRef, {
+          'role': 'driver',
+          // Optionally update other details if you want searchability
+          'carModel': '${app.vehicleMake} ${app.vehicleModel}',
+          'plateNumber': app.licensePlate,
+          // 'status': 'active', // If you use status on user model
+        });
+      }
+
+      await batch.commit();
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Driver $status successfully')),
+          SnackBar(content: Text('Application $status successfully')),
         );
       }
     } catch (e) {

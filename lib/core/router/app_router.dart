@@ -114,7 +114,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/courier-tracking',
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
-          return CourierTrackingScreen(courierId: extra?['courierId']);
+          // Support both extra (for in-app navigation) and query params (for web URL persistence)
+          final courierId = extra?['courierId'] ?? state.uri.queryParameters['courierId'];
+          return CourierTrackingScreen(courierId: courierId);
         },
       ),
       GoRoute(

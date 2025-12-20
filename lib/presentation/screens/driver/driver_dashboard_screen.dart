@@ -1,12 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fast_delivery/core/models/courier_model.dart';
 import 'package:fast_delivery/core/models/ride_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/app_drawer.dart';
-import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:fast_delivery/presentation/common/background_orbs.dart';
-import 'package:fl_chart/fl_chart.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +12,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
-import 'package:url_launcher/url_launcher.dart';
 
 class DriverDashboardScreen extends ConsumerStatefulWidget {
   const DriverDashboardScreen({super.key});
@@ -26,13 +23,7 @@ class DriverDashboardScreen extends ConsumerStatefulWidget {
 class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   bool _isAccepting = false;
-  int _selectedIndex = 0; // For NavigationRail
-  
-  // For the earnings chart - matching green theme
-  final List<Color> gradientColors = [
-    AppTheme.primaryColor,
-    const Color(0xFF00E5FF), // Cyan accent
-  ];
+
 
   @override
   void initState() {
@@ -84,129 +75,113 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
     );
   }
 
-  // --- MODERN DARK DASHBOARD ---
+  // --- 3D ULTRA MODERN DASHBOARD ---
   Widget _buildDashboardView(bool isOnline) {
     return SafeArea(
-      child: Column(
-        children: [
-          // Top Bar with menu and status toggle
-          _buildDashboardAppBar(isOnline),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isSmallScreen = constraints.maxWidth < 380;
+          final horizontalPadding = isSmallScreen ? 16.0 : 20.0;
           
-          // Scrollable Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Earnings Card
-                  _buildEarningsChartCard()
-                      .animate()
-                      .fadeIn(duration: 400.ms)
-                      .slideY(begin: 0.1, end: 0),
-                  const SizedBox(height: 24),
-                  
-                  // Stats Title
-                  Text(
-                    'Stats Overview',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Stats Grid
-                  _buildStatsGrid()
-                      .animate()
-                      .fadeIn(delay: 200.ms, duration: 400.ms)
-                      .slideY(begin: 0.1, end: 0),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Quick Actions
-                  Text(
-                    'Quick Actions',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Quick action buttons
-                  Row(
+          return Column(
+            children: [
+              // Top Bar with menu and status toggle
+              _buildDashboardAppBar(isOnline),
+              
+              // Scrollable Content
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: _buildQuickActionButton(
-                          icon: Icons.wallet,
-                          label: 'Wallet',
-                          onTap: () => context.push('/wallet'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildQuickActionButton(
-                          icon: Icons.history,
-                          label: 'Trips',
-                          onTap: () => context.push('/history'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildQuickActionButton(
-                          icon: Icons.settings,
-                          label: 'Settings',
-                          onTap: () => context.push('/settings'),
-                        ),
-                      ),
+                      // 3D Balance Card (replaces chart)
+                      _build3DBalanceCard()
+                          .animate()
+                          .fadeIn(duration: 400.ms)
+                          .slideY(begin: 0.1, end: 0)
+                          .shimmer(delay: 600.ms, duration: 1200.ms),
+                      const SizedBox(height: 24),
+                      
+                      // Stats Title with glow
+                      _buildSectionTitle('Stats Overview'),
+                      const SizedBox(height: 16),
+                      
+                      // 3D Stats Grid
+                      _build3DStatsGrid(isSmallScreen)
+                          .animate()
+                          .fadeIn(delay: 200.ms, duration: 400.ms)
+                          .slideY(begin: 0.1, end: 0),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Quick Actions Title
+                      _buildSectionTitle('Quick Actions'),
+                      const SizedBox(height: 16),
+                      
+                      // Horizontal Quick Actions
+                      _build3DQuickActions()
+                          .animate()
+                          .fadeIn(delay: 400.ms, duration: 400.ms),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Recent Activity
+                      _buildSectionTitle('Recent Activity'),
+                      const SizedBox(height: 16),
+                      
+                      _buildRecentTrips()
+                          .animate()
+                          .fadeIn(delay: 600.ms, duration: 400.ms)
+                          .slideX(begin: 0.1, end: 0),
+                      
+                      const SizedBox(height: 20),
                     ],
-                  ).animate().fadeIn(delay: 400.ms, duration: 400.ms),
-                ],
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
   
-  Widget _buildQuickActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: AppTheme.neomorphicShadow(),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.05),
+  Widget _buildSectionTitle(String title) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 20,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppTheme.primaryColor, AppTheme.primaryColor.withValues(alpha: 0.3)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: BorderRadius.circular(2),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryColor.withValues(alpha: 0.5),
+                blurRadius: 8,
+              ),
+            ],
           ),
         ),
-        child: Column(
-          children: [
-            Icon(icon, color: AppTheme.primaryColor, size: 24),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.white70,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+        const SizedBox(width: 10),
+        Text(
+          title,
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
-      ),
+      ],
     );
   }
+  
 
   Widget _buildDashboardAppBar(bool isOnline) {
     return Container(
@@ -295,173 +270,438 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
     );
   }
 
-  Widget _buildEarningsChartCard() {
+  // --- 3D BALANCE CARD ---
+  Widget _build3DBalanceCard() {
     return Container(
-      height: 280,
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: AppTheme.neomorphicShadow(),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.surfaceColor,
+            AppTheme.surfaceColor.withValues(alpha: 0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: AppTheme.primaryColor.withValues(alpha: 0.2),
+          width: 1.5,
+        ),
+        boxShadow: [
+          // 3D depth shadow
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 25,
+            offset: const Offset(0, 15),
+            spreadRadius: -5,
+          ),
+          // Inner glow
+          BoxShadow(
+            color: AppTheme.primaryColor.withValues(alpha: 0.1),
+            blurRadius: 30,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              Expanded(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Available Balance',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white54,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(Icons.account_balance_wallet, 
+                          color: AppTheme.primaryColor, size: 16),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Available Balance',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white60,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
                         '₦',
                         style: GoogleFonts.spaceGrotesk(
-                          fontSize: 20,
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.primaryColor,
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: 2),
                       Text(
                         '4,336',
                         style: GoogleFonts.spaceGrotesk(
                           fontSize: 36,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
                           color: Colors.white,
+                          height: 1,
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
+              ),
+              const SizedBox(width: 12),
+              // Withdraw Button
               Container(
-                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryColor,
+                      AppTheme.primaryColor.withValues(alpha: 0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => context.push('/wallet'),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      child: Text(
+                        'Withdraw',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                child: Icon(Icons.trending_up, color: AppTheme.primaryColor, size: 24),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          Expanded(
-            child: LineChart(
-              LineChartData(
-                gridData: const FlGridData(show: false),
-                titlesData: const FlTitlesData(show: false),
-                borderData: FlBorderData(show: false),
-                minX: 0,
-                maxX: 11,
-                minY: 0,
-                maxY: 6,
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 3),
-                      FlSpot(2, 3.5),
-                      FlSpot(4, 2),
-                      FlSpot(6, 4.5),
-                      FlSpot(8, 3.8),
-                      FlSpot(10, 5),
-                      FlSpot(11, 4),
-                    ],
-                    isCurved: true,
-                    gradient: LinearGradient(colors: gradientColors),
-                    barWidth: 4,
-                    isStrokeCapRound: true,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        colors: gradientColors.map((color) => color.withValues(alpha: 0.15)).toList(),
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          // Today's summary
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildMiniStat('Today', '₦2,150', Icons.today),
+                Container(width: 1, height: 30, color: Colors.white.withValues(alpha: 0.1)),
+                _buildMiniStat('Week', '₦12,400', Icons.date_range),
+                Container(width: 1, height: 30, color: Colors.white.withValues(alpha: 0.1)),
+                _buildMiniStat('Trips', '8', Icons.directions_car),
+              ],
             ),
           ),
         ],
       ),
     );
   }
-
-  Widget _buildStatsGrid() {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.3,
+  
+  Widget _buildMiniStat(String label, String value, IconData icon) {
+    return Column(
       children: [
-        _buildStatCard('Trips', '34', Icons.directions_car, const Color(0xFF4FC3F7)),
-        _buildStatCard('Time', '5h 12m', Icons.schedule, const Color(0xFFFF8A65)),
-        _buildStatCard('Rating', '4.9', Icons.star_rounded, const Color(0xFFFFD54F)),
-        _buildStatCard('Accept', '94%', Icons.check_circle, AppTheme.primaryColor),
+        Icon(icon, color: Colors.white38, size: 16),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: GoogleFonts.spaceGrotesk(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            color: Colors.white38,
+            fontSize: 11,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  // --- 3D STATS GRID ---
+  Widget _build3DStatsGrid(bool isSmallScreen) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 1.25,
+      children: [
+        _build3DStatCard('Trips', '34', Icons.directions_car_rounded, const Color(0xFF4FC3F7), const Color(0xFF0288D1)),
+        _build3DStatCard('Online', '5h 12m', Icons.schedule_rounded, const Color(0xFFFF8A65), const Color(0xFFF4511E)),
+        _build3DStatCard('Rating', '4.9', Icons.star_rounded, const Color(0xFFFFD54F), const Color(0xFFFFA000)),
+        _build3DStatCard('Accept', '94%', Icons.check_circle_rounded, AppTheme.primaryColor, const Color(0xFF00C853)),
+      ],
+    );
+  }
+
+  Widget _build3DStatCard(String title, String value, IconData icon, Color color, Color darkColor) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppTheme.neomorphicShadow(),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.surfaceColor,
+            AppTheme.surfaceColor.withValues(alpha: 0.85),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: color.withValues(alpha: 0.2),
+        ),
+        boxShadow: [
+          // Main 3D shadow
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+            spreadRadius: -5,
+          ),
+          // Color accent glow
+          BoxShadow(
+            color: color.withValues(alpha: 0.15),
+            blurRadius: 15,
+            offset: const Offset(0, -2),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // Icon with gradient background
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
+              gradient: LinearGradient(
+                colors: [color.withValues(alpha: 0.25), color.withValues(alpha: 0.1)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.3),
+                  blurRadius: 10,
+                ),
+              ],
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const Spacer(),
+          // Value and title
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: GoogleFonts.spaceGrotesk(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 22,
+                ),
+              ),
+              Text(
+                title,
+                style: GoogleFonts.plusJakartaSans(
+                  color: Colors.white54,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- 3D QUICK ACTIONS ---
+  Widget _build3DQuickActions() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: [
+          _build3DActionChip(Icons.wallet, 'Wallet', () => context.push('/wallet')),
+          const SizedBox(width: 12),
+          _build3DActionChip(Icons.history, 'History', () => context.push('/history')),
+          const SizedBox(width: 12),
+          _build3DActionChip(Icons.bar_chart, 'Earnings', () => context.push('/driver-earnings')),
+          const SizedBox(width: 12),
+          _build3DActionChip(Icons.settings, 'Settings', () => context.push('/settings')),
+          const SizedBox(width: 12),
+          _build3DActionChip(Icons.help_outline, 'Help', () {}),
+        ],
+      ),
+    );
+  }
+  
+  Widget _build3DActionChip(IconData icon, String label, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.surfaceColor,
+              AppTheme.surfaceColor.withValues(alpha: 0.7),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+          borderRadius: BorderRadius.circular(50),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: AppTheme.primaryColor, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- RECENT TRIPS ---
+  Widget _buildRecentTrips() {
+    final trips = [
+      {'from': 'Ikeja Mall', 'to': 'Victoria Island', 'amount': '₦2,500', 'time': '2h ago'},
+      {'from': 'Lekki Phase 1', 'to': 'Airport', 'amount': '₦4,200', 'time': '4h ago'},
+      {'from': 'Yaba', 'to': 'Ajah', 'amount': '₦3,100', 'time': '6h ago'},
+    ];
+    
+    return Column(
+      children: trips.map((trip) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: _buildTripCard(trip),
+      )).toList(),
+    );
+  }
+  
+  Widget _buildTripCard(Map<String, String> trip) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.surfaceColor.withValues(alpha: 0.9),
+            AppTheme.surfaceColor.withValues(alpha: 0.7),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(Icons.directions_car, color: AppTheme.primaryColor, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${trip['from']} → ${trip['to']}',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  trip['time']!,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white38,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
           Text(
-            value,
+            trip['amount']!,
             style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
+              color: AppTheme.primaryColor,
               fontWeight: FontWeight.bold,
-              fontSize: 24,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white54,
-              fontWeight: FontWeight.w500,
-              fontSize: 13,
+              fontSize: 16,
             ),
           ),
         ],

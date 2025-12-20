@@ -16,8 +16,14 @@ class RideModel {
   final String pickupAddress;
   final String dropoffAddress;
   final double price;
-  final String status; // 'pending', 'accepted', 'ongoing', 'completed', 'cancelled'
+  final String status; // 'pending', 'accepted', 'arrived', 'in_progress', 'completed', 'cancelled'
   final DateTime createdAt;
+
+  // Status transition timestamps
+  final DateTime? acceptedAt;
+  final DateTime? arrivedAt;
+  final DateTime? tripStartedAt;
+  final DateTime? completedAt;
 
   final String? userPhone; // Contact for the passenger
 
@@ -42,6 +48,10 @@ class RideModel {
     required this.price,
     this.status = 'pending',
     required this.createdAt,
+    this.acceptedAt,
+    this.arrivedAt,
+    this.tripStartedAt,
+    this.completedAt,
     this.stops = const [],
     this.stopLocations = const [],
   });
@@ -65,6 +75,10 @@ class RideModel {
       price: (data['price'] ?? 0.0).toDouble(),
       status: data['status'] ?? 'pending',
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+      acceptedAt: data['acceptedAt'] != null ? (data['acceptedAt'] as Timestamp).toDate() : null,
+      arrivedAt: data['arrivedAt'] != null ? (data['arrivedAt'] as Timestamp).toDate() : null,
+      tripStartedAt: data['tripStartedAt'] != null ? (data['tripStartedAt'] as Timestamp).toDate() : null,
+      completedAt: data['completedAt'] != null ? (data['completedAt'] as Timestamp).toDate() : null,
       stops: List<String>.from(data['stops'] ?? []),
       stopLocations: List<GeoPoint>.from(data['stopLocations'] ?? []),
     );
@@ -88,6 +102,10 @@ class RideModel {
       'price': price,
       'status': status,
       'createdAt': Timestamp.fromDate(createdAt),
+      'acceptedAt': acceptedAt != null ? Timestamp.fromDate(acceptedAt!) : null,
+      'arrivedAt': arrivedAt != null ? Timestamp.fromDate(arrivedAt!) : null,
+      'tripStartedAt': tripStartedAt != null ? Timestamp.fromDate(tripStartedAt!) : null,
+      'completedAt': completedAt != null ? Timestamp.fromDate(completedAt!) : null,
       'stops': stops,
       'stopLocations': stopLocations,
     };

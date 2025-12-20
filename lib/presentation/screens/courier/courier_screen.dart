@@ -139,11 +139,8 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Courier Requested Successfully!')),
         );
-        // Navigate to tracking screen with courier ID (same as rides)
-        context.go('/tracking', extra: {
-          'rideId': courier.id,
-          'destinationName': courier.dropoffAddress,
-        });
+        // Navigate to courier tracking screen with courier ID
+        context.go('/courier-tracking?courierId=${courier.id}');
       }
     } catch (e) {
       if (mounted) {

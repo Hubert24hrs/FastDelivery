@@ -369,16 +369,11 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
 
     // Keep existing courier view logic separate or refactor later
   Widget _buildCourierView() {
-    final courierStream = ref.watch(databaseServiceProvider).getActiveCouriers().map((list) {
-      try {
-        return list.firstWhere((c) => c.id == widget.courier!.id);
-      } catch (e) {
-        return widget.courier!; // Fallback if not found (e.g. completed)
-      }
-    });
+    // Use streamCourier to get real-time updates for this specific courier
+    final courierStream = ref.watch(databaseServiceProvider).streamCourier(widget.courier!.id);
 
     return Scaffold(
-      body: StreamBuilder<CourierModel>(
+      body: StreamBuilder<CourierModel?>(
         stream: courierStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -388,6 +383,8 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
           final courier = snapshot.data ?? widget.courier!;
           final status = courier.status;
           _currentStatus = status;
+          
+          debugPrint('CourierNavigation: status=$status');
 
           return Stack(
             children: [
@@ -461,51 +458,57 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
                                       await launchUrl(launchUri);
                                     }
                                   },
-                                  icon: const Icon(Icons.phone, size: 18),
+                                  icon: const Icon(Icons.phone, size: 16),
                                   label: const Text('CALL'),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: Colors.white,
                                     side: const BorderSide(color: Colors.white24),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () {
+                                    // Chat with customer
+                                    context.push('/chat', extra: {
+                                      'recipientId': courier.userId,
+                                      'recipientName': courier.receiverName,
+                                      'courierId': courier.id,
+                                    });
+                                  },
+                                  icon: const Icon(Icons.chat, size: 16),
+                                  label: const Text('CHAT'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppTheme.primaryColor,
+                                    side: BorderSide(color: AppTheme.primaryColor),
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
                               Expanded(
                                 child: OutlinedButton.icon(
                                   onPressed: () async {
                                     final lat = courier.dropoffLocation.latitude;
                                     final lng = courier.dropoffLocation.longitude;
                                     final uri = Uri.parse('google.navigation:q=$lat,$lng&mode=d');
-                                    debugPrint('Attempting to launch: $uri');
-
                                     if (await canLaunchUrl(uri)) {
-                                      debugPrint('Launching native navigation...');
                                       await launchUrl(uri);
                                     } else {
-                                      debugPrint('Native navigation failed. Trying fallback...');
                                       final webUri = Uri.parse('https://www.google.com/maps/dir/?api=1&destination=$lat,$lng');
-                                      debugPrint('Attempting fallback: $webUri');
-                                      
                                       if (await canLaunchUrl(webUri)) {
-                                        debugPrint('Launching fallback...');
                                         await launchUrl(webUri, mode: LaunchMode.externalApplication);
-                                      } else {
-                                        debugPrint('Could not launch fallback either.');
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Could not open Maps')),
-                                          );
-                                        }
                                       }
                                     }
                                   },
-                                  icon: const Icon(Icons.navigation, size: 18),
+                                  icon: const Icon(Icons.navigation, size: 16),
                                   label: const Text('NAV'),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: Colors.blueAccent,
                                     side: const BorderSide(color: Colors.blueAccent),
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
                                   ),
                                 ),
                               ),

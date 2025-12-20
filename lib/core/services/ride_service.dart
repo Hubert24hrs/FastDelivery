@@ -68,7 +68,25 @@ class RideService {
     if (plateNumber != null) data['plateNumber'] = plateNumber;
     if (driverLocation != null) data['driverLocation'] = driverLocation;
 
+    // Auto-set timestamp based on status
+    final now = Timestamp.now();
+    switch (status) {
+      case 'accepted':
+        data['acceptedAt'] = now;
+        break;
+      case 'arrived':
+        data['arrivedAt'] = now;
+        break;
+      case 'in_progress':
+        data['tripStartedAt'] = now;
+        break;
+      case 'completed':
+        data['completedAt'] = now;
+        break;
+    }
+
     await _ridesCollection.doc(rideId).update(data);
+    debugPrint('RideService: Successfully updated ride $rideId to $status');
   }
 
   // Stream a specific ride by ID (for tracking)

@@ -10,6 +10,7 @@ class UserModel {
   final String? homeAddress;
   final String? workAddress;
   final double walletBalance;
+  final String? fcmToken;
   final DateTime createdAt;
 
   UserModel({
@@ -22,6 +23,7 @@ class UserModel {
     this.walletBalance = 0.0,
     this.homeAddress,
     this.workAddress,
+    this.fcmToken,
     required this.createdAt,
   });
 
@@ -51,6 +53,7 @@ class UserModel {
           : (data['walletBalance'] ?? 0.0).toDouble(),
       homeAddress: data['homeAddress'],
       workAddress: data['workAddress'],
+      fcmToken: data['fcmToken'],
       createdAt: parsedCreatedAt,
     );
   }
@@ -65,6 +68,7 @@ class UserModel {
       'walletBalance': walletBalance,
       'homeAddress': homeAddress,
       'workAddress': workAddress,
+      'fcmToken': fcmToken,
       'createdAt': createdAt.toIso8601String(),
     };
   }
