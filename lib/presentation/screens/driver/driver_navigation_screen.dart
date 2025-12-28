@@ -622,6 +622,14 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
         final driverId = ref.read(authServiceProvider).currentUser?.uid ?? 'driver_1';
         await ref.read(databaseServiceProvider).updateCourierStatus(courier.id, nextStatus, driverId);
         
+        // Trigger notification for the customer
+        final notificationService = ref.read(notificationServiceProvider);
+        await notificationService.notifyCourierStatusUpdate(
+          courierId: courier.id,
+          status: nextStatus,
+          deliveryInfo: courier.receiverName,
+        );
+        
         if (nextStatus == 'delivered') {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Delivery Confirmed!')));
@@ -670,6 +678,15 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
 
       if (nextStatus.isNotEmpty) {
         await ref.read(rideServiceProvider).updateRideStatus(ride.id, nextStatus);
+        
+        // Trigger notification for the passenger
+        final notificationService = ref.read(notificationServiceProvider);
+        final driverName = ref.read(authServiceProvider).currentUser?.displayName ?? 'Your driver';
+        await notificationService.notifyRideStatusUpdate(
+          rideId: ride.id,
+          status: nextStatus,
+          driverName: driverName,
+        );
         
         if (nextStatus == 'completed') {
           if (mounted) context.pop();

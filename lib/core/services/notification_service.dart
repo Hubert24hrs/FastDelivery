@@ -307,6 +307,14 @@ class NotificationService {
         title = '📦 Courier Assigned';
         body = 'A dispatch rider has been assigned to your delivery.';
         break;
+      case 'arrived':
+        title = '📍 Driver Arrived';
+        body = 'Your driver has arrived at the pickup location.';
+        break;
+      case 'in_transit':
+        title = '📬 Package Picked Up';
+        body = 'Your package has been picked up and is on the way.';
+        break;
       case 'picked_up':
         title = '📬 Package Picked Up';
         body = 'Your package has been picked up and is on the way.';
