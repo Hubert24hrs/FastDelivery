@@ -1,0 +1,45 @@
+# This file tells Git which files to ignore
+# GitHub Actions and build artifacts
+
+# Flutter/Dart build outputs
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+
+# Test coverage
+coverage/
+
+# Android specific
+*.jks
+*.keystore
+key.properties
+local.properties
+
+# iOS specific
+*.mobileprovision
+*.p12
+*.cer
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp

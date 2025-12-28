@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:fast_delivery/core/services/analytics_service.dart';
 import 'package:fast_delivery/core/services/notification_service.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/error_boundary.dart';
@@ -41,38 +42,22 @@ void main() async {
 
     runApp(const ProviderScope(child: FastDeliveryApp()));
   }, (error, stackTrace) {
-    // Handle uncaught async errors
+    // Handled by Crashlytics in AnalyticsService
     debugPrint('Uncaught async error: $error');
-    debugPrint('Stack trace: $stackTrace');
   });
 }
 
-/// Set up global error handlers for Flutter errors
+/// Set up global error handlers (now handled by AnalyticsService)
 void _setupErrorHandlers() {
-  // Override the default error widget builder for release mode
+  // Error handling is now managed by AnalyticsService.initialize()
+  // which sets up Crashlytics integration
+  
+  // Override error widget for release mode
   ErrorWidget.builder = (FlutterErrorDetails details) {
-    // In debug mode, show the default red error screen
     if (kDebugMode) {
       return ErrorWidget(details.exception);
     }
-    // In release mode, show a user-friendly error widget
     return GlobalErrorWidget(errorDetails: details);
-  };
-
-  // Handle Flutter framework errors
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    debugPrint('FlutterError: ${details.exceptionAsString()}');
-    // In production, you might want to send this to a crash reporting service
-    // like Firebase Crashlytics, Sentry, etc.
-  };
-
-  // Handle platform errors
-  PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('Platform error: $error');
-    debugPrint('Stack trace: $stack');
-    // Return true to indicate the error was handled
-    return true;
   };
 }
 
@@ -87,10 +72,16 @@ class _FastDeliveryAppState extends ConsumerState<FastDeliveryApp> {
   @override
   void initState() {
     super.initState();
+    // Initialize Analytics and Crashlytics
+    ref.read(analyticsServiceProvider).initialize();
+    
     // Initialize Notification Service
     if (!kIsWeb) {
       ref.read(notificationServiceProvider).initialize();
     }
+    
+    // Log app open event
+    ref.read(analyticsServiceProvider).logAppOpen();
   }
 
   @override

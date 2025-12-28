@@ -1,0 +1,139 @@
+name: Flutter CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Job 1: Run tests and code analysis
+  test:
+    name: Test & Analyze
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+      
+      - name: Get dependencies
+        run: flutter pub get
+      
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+      
+      - name: Analyze code
+        run: flutter analyze
+      
+      - name: Run tests
+        run: flutter test --coverage
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+      
+      - name: Test results summary
+        if: always()
+        run: |
+          echo "✅ Tests completed!"
+          echo "Check the Actions tab for detailed results"
+
+  # Job 2: Build Android APK
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    needs: test  # Only build if tests pass
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+      
+      - name: Get dependencies
+        run: flutter pub get
+      
+      - name: Build APK
+        run: flutter build apk --release
+      
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fast-delivery-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+      
+      - name: Build summary
+        run: |
+          echo "✅ Android APK built successfully!"
+          echo "Download from the Artifacts section"
+
+  # Job 3: Build Android App Bundle (for Play Store)
+  build-appbundle:
+    name: Build Android App Bundle
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'  # Only on main branch
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+      
+      - name: Get dependencies
+        run: flutter pub get
+      
+      - name: Build App Bundle
+        run: flutter build appbundle --release
+      
+      - name: Upload App Bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fast-delivery-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
+      
+      - name: Build summary
+        run: |
+          echo "✅ Android App Bundle built successfully!"
+          echo "Ready for Play Store deployment"
