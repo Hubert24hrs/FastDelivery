@@ -197,10 +197,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/chat',
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>;
+          final extra = state.extra as Map<String, dynamic>?;
+          debugPrint('Chat route - extra: $extra');
+          debugPrint('Chat route - rideId: ${extra?['rideId']}');
+          debugPrint('Chat route - otherUserName: ${extra?['otherUserName']}');
           return ChatScreen(
-            rideId: extra['rideId'],
-            otherUserName: extra['otherUserName'],
+            rideId: extra?['rideId'],
+            otherUserName: extra?['otherUserName'],
           );
         },
       ),

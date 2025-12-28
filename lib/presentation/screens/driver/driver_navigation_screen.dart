@@ -473,9 +473,8 @@ class _DriverNavigationScreenState extends ConsumerState<DriverNavigationScreen>
                                   onPressed: () {
                                     // Chat with customer
                                     context.push('/chat', extra: {
-                                      'recipientId': courier.userId,
-                                      'recipientName': courier.receiverName,
-                                      'courierId': courier.id,
+                                      'rideId': courier.id,
+                                      'otherUserName': courier.receiverName,
                                     });
                                   },
                                   icon: const Icon(Icons.chat, size: 16),

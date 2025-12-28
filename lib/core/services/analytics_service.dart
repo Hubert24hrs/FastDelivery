@@ -1,27 +1,18 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Service for tracking analytics events and crashes
+/// Service for tracking analytics events
 class AnalyticsService {
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
-  final FirebaseCrashlytics _crashlytics = FirebaseCrashlytics.instance;
 
-  /// Initialize analytics and crashlytics
+  /// Initialize analytics
   Future<void> initialize() async {
     try {
       // Enable analytics collection
       await _analytics.setAnalyticsCollectionEnabled(true);
       
-      // Configure Crashlytics
-      FlutterError.onError = _crashlytics.recordFlutterFatalError;
-      PlatformDispatcher.instance.onError = (error, stack) {
-        _crashlytics.recordError(error, stack, fatal: true);
-        return true;
-      };
-
       debugPrint('AnalyticsService: Initialized successfully');
     } catch (e) {
       debugPrint('AnalyticsService: Error initializing - $e');
@@ -32,7 +23,6 @@ class AnalyticsService {
   Future<void> setUserId(String userId) async {
     try {
       await _analytics.setUserId(id: userId);
-      await _crashlytics.setUserIdentifier(userId);
       debugPrint('AnalyticsService: User ID set to $userId');
     } catch (e) {
       debugPrint('AnalyticsService: Error setting user ID - $e');
@@ -43,18 +33,17 @@ class AnalyticsService {
   Future<void> setUserProperty(String name, String value) async {
     try {
       await _analytics.setUserProperty(name: name, value: value);
-      await _crashlytics.setCustomKey(name, value);
     } catch (e) {
       debugPrint('AnalyticsService: Error setting user property - $e');
     }
   }
 
-  /// Log a custom event
+  ///Log a custom event
   Future<void> logEvent(String name, {Map<String, dynamic>? parameters}) async {
     try {
       await _analytics.logEvent(
         name: name,
-        parameters: parameters,
+        parameters: parameters?.map((key, value) => MapEntry(key, value as Object)),
       );
       debugPrint('AnalyticsService: Event logged - $name ${parameters ?? ""}');
     } catch (e) {
@@ -216,46 +205,10 @@ class AnalyticsService {
 
   Future<void> logDriverEarningsWithdrawn(double amount) async {
     await logEvent('driver_earnings_withdrawn', parameters: {
-      'amount': amount,
-      'currency': 'NGN',
     });
   }
-
-  // ==================== Error Tracking ====================
-  
-  /// Log a non-fatal error to Crashlytics
-  Future<void> logError(String message, {dynamic error, StackTrace? stackTrace}) async {
-    try {
-      await _crashlytics.recordError(
-        error ?? Exception(message),
-        stackTrace,
-        reason: message,
-        fatal: false,
-      );
-      debugPrint('AnalyticsService: Error logged - $message');
-    } catch (e) {
-      debugPrint('AnalyticsService: Error logging error - $e');
-    }
-  }
-
-  /// Set custom key for debugging
-  Future<void> setCustomKey(String key, dynamic value) async {
-    try {
-      await _crashlytics.setCustomKey(key, value);
-    } catch (e) {
-      debugPrint('AnalyticsService: Error setting custom key - $e');
-    }
-  }
-
-  /// Log a breadcrumb for crash debugging
-  Future<void> logBreadcrumb(String message) async {
-    try {
-      await _crashlytics.log(message);
-    } catch (e) {
-      debugPrint('AnalyticsService: Error logging breadcrumb - $e');
-    }
-  }
 }
+
 
 /// Provider for AnalyticsService
 final analyticsServiceProvider = Provider<AnalyticsService>((ref) {

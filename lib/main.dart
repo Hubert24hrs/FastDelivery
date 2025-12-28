@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:fast_delivery/core/services/analytics_service.dart';
 import 'package:fast_delivery/core/services/notification_service.dart';
+import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/error_boundary.dart';
 import 'package:flutter/foundation.dart';
@@ -73,7 +74,7 @@ class _FastDeliveryAppState extends ConsumerState<FastDeliveryApp> {
   void initState() {
     super.initState();
     // Initialize Analytics and Crashlytics
-    ref.read(analyticsServiceProvider).initialize();
+    // ref.read(analyticsServiceProvider).initialize();
     
     // Initialize Notification Service
     if (!kIsWeb) {
@@ -81,7 +82,7 @@ class _FastDeliveryAppState extends ConsumerState<FastDeliveryApp> {
     }
     
     // Log app open event
-    ref.read(analyticsServiceProvider).logAppOpen();
+    // ref.read(analyticsServiceProvider).logAppOpen();
   }
 
   @override

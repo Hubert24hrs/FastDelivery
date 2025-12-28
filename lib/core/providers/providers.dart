@@ -1,9 +1,11 @@
 
 import 'package:fast_delivery/core/models/courier_model.dart';
 import 'package:fast_delivery/core/models/ride_model.dart';
+import 'package:fast_delivery/core/services/analytics_service.dart';
 import 'package:fast_delivery/core/services/auth_service.dart';
 import 'package:fast_delivery/core/services/database_service.dart';
 import 'package:fast_delivery/core/services/location_service.dart';
+import 'package:fast_delivery/core/services/notification_service.dart';
 import 'package:fast_delivery/core/services/payment_service.dart';
 import 'package:fast_delivery/core/services/saved_destinations_service.dart';
 import 'package:fast_delivery/core/services/earnings_service.dart';
@@ -37,6 +39,7 @@ final earningsServiceProvider = Provider<EarningsService>((ref) => EarningsServi
 final ratingServiceProvider = Provider<RatingService>((ref) => RatingService());
 final favoriteDriversServiceProvider = Provider<FavoriteDriversService>((ref) => FavoriteDriversService());
 final emailServiceProvider = Provider<EmailService>((ref) => EmailService());
+final notificationServiceProvider = Provider<NotificationService>((ref) => NotificationService(ref));
 
 // Auth State
 final authStateProvider = StreamProvider<User?>((ref) {

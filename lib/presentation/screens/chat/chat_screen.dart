@@ -10,13 +10,13 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
-  final String rideId;
-  final String otherUserName;
+  final String? rideId;
+  final String? otherUserName;
 
   const ChatScreen({
     super.key,
-    required this.rideId,
-    required this.otherUserName,
+    this.rideId,
+    this.otherUserName,
   });
 
   @override
@@ -51,7 +51,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     _messageController.clear();
 
     try {
-      await ref.read(databaseServiceProvider).sendMessage(widget.rideId, message);
+      await ref.read(databaseServiceProvider).sendMessage(widget.rideId!, message);
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           0,
@@ -70,13 +70,39 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final messagesStream = ref.watch(databaseServiceProvider).getMessagesStream(widget.rideId);
+    // Handle missing rideId
+    if (widget.rideId == null || widget.rideId!.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Chat', style: TextStyle(color: Colors.white)),
+          backgroundColor: Colors.transparent,
+        ),
+        body: Container(
+          decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 60, color: Colors.white54),
+                SizedBox(height: 16),
+                Text(
+                  'Invalid chat session',
+                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final messagesStream = ref.watch(databaseServiceProvider).getMessagesStream(widget.rideId!);
     final currentUserId = ref.watch(currentUserIdProvider);
 
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(widget.otherUserName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(widget.otherUserName ?? 'Chat', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: Padding(
