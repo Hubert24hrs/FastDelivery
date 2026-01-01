@@ -30,6 +30,8 @@ import 'package:fast_delivery/presentation/screens/tracking/tracking_screen.dart
 import 'package:fast_delivery/presentation/screens/wallet/add_card_screen.dart';
 import 'package:fast_delivery/presentation/screens/wallet/transaction_history_screen.dart';
 import 'package:fast_delivery/presentation/screens/wallet/wallet_screen.dart';
+import 'package:fast_delivery/presentation/screens/investor/investor_onboarding_screen.dart';
+import 'package:fast_delivery/presentation/screens/investor/investor_dashboard_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -248,6 +250,39 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/favorite-drivers',
         builder: (context, state) => const FavoriteDriversScreen(),
+      ),
+      // ==================== INVESTOR ROUTES ====================
+      GoRoute(
+        path: '/investor',
+        builder: (context, state) => const InvestorDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/investor/onboarding',
+        builder: (context, state) => const InvestorOnboardingScreen(),
+      ),
+      GoRoute(
+        path: '/investor/dashboard',
+        builder: (context, state) => const InvestorDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/investor/fund-bike',
+        builder: (context, state) => const InvestorDashboardScreen(), // TODO: Create FundBikeScreen
+      ),
+      GoRoute(
+        path: '/investor/earnings',
+        builder: (context, state) => const InvestorDashboardScreen(), // TODO: Create InvestorEarningsScreen
+      ),
+      GoRoute(
+        path: '/investor/withdraw',
+        builder: (context, state) => const InvestorDashboardScreen(), // TODO: Create InvestorWithdrawScreen
+      ),
+      GoRoute(
+        path: '/investor/bike/:bikeId',
+        builder: (context, state) {
+          final bikeId = state.pathParameters['bikeId'];
+          debugPrint('Investor bike detail: bikeId=$bikeId');
+          return const InvestorDashboardScreen(); // TODO: Create BikeDetailScreen
+        },
       ),
     ],
   );

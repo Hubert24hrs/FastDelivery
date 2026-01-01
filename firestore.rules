@@ -172,5 +172,95 @@ service cloud.firestore {
       allow read, write: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
     }
+
+    // ==================== INVESTORS COLLECTION ====================
+    match /investors/{investorId} {
+      // Investors can read their own profile, admins can read all
+      allow read: if isOwner(investorId) || isAdmin();
+      
+      // Users can create their own investor profile
+      allow create: if isOwner(investorId);
+      
+      // Investors can update their own profile, admins can update any
+      allow update: if isOwner(investorId) || isAdmin();
+      
+      // Only admins can delete investor profiles
+      allow delete: if isAdmin();
+    }
+
+    // ==================== BIKES COLLECTION ====================
+    match /bikes/{bikeId} {
+      // Investors and riders can read their assigned bikes, admins can read all
+      allow read: if isAuthenticated() && (
+        resource.data.investorId == request.auth.uid ||
+        resource.data.riderId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // Only admins can create bikes
+      allow create: if isAdmin();
+      
+      // Investors, riders, and admins can update bikes
+      allow update: if isAuthenticated() && (
+        resource.data.investorId == request.auth.uid ||
+        resource.data.riderId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // Only admins can delete bikes
+      allow delete: if isAdmin();
+    }
+
+    // ==================== HP AGREEMENTS COLLECTION ====================
+    match /hp_agreements/{agreementId} {
+      // Investors and riders can read their agreements
+      allow read: if isAuthenticated() && (
+        resource.data.investorId == request.auth.uid ||
+        resource.data.riderId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // Only admins can create agreements
+      allow create: if isAdmin();
+      
+      // Only admins can update agreements
+      allow update: if isAdmin();
+      
+      // Only admins can delete agreements
+      allow delete: if isAdmin();
+    }
+
+    // ==================== INVESTOR EARNINGS COLLECTION ====================
+    match /investor_earnings/{earningId} {
+      // Investors can read their own earnings
+      allow read: if isAuthenticated() && (
+        resource.data.investorId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // System-generated only (via Cloud Functions in production)
+      allow create: if false;
+      
+      // Immutable records
+      allow update, delete: if false;
+    }
+
+    // ==================== INVESTOR WITHDRAWALS COLLECTION ====================
+    match /investor_withdrawals/{withdrawalId} {
+      // Investors can read their own withdrawals
+      allow read: if isAuthenticated() && (
+        resource.data.investorId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // Investors can create withdrawal requests
+      allow create: if isAuthenticated() && request.resource.data.investorId == request.auth.uid;
+      
+      // Only admins/system can update withdrawal status
+      allow update: if isAdmin();
+      
+      // No deletions
+      allow delete: if false;
+    }
   }
 }
