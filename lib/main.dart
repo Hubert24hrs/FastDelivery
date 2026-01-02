@@ -1,10 +1,9 @@
 import 'dart:async';
-import 'dart:ui';
 
-import 'package:fast_delivery/core/services/analytics_service.dart';
-import 'package:fast_delivery/core/services/notification_service.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
+import 'package:fast_delivery/presentation/common/background_orbs.dart';
+import 'package:fast_delivery/presentation/common/connectivity_wrapper.dart';
 import 'package:fast_delivery/presentation/common/error_boundary.dart';
 import 'package:flutter/foundation.dart';
 import 'package:fast_delivery/core/router/app_router.dart';
@@ -97,7 +96,9 @@ class _FastDeliveryAppState extends ConsumerState<FastDeliveryApp> {
       builder: (context, child) {
         // Wrap with error boundary for additional protection
         return ErrorBoundary(
-          child: child ?? const SizedBox.shrink(),
+          child: ConnectivityWrapper(
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
     );

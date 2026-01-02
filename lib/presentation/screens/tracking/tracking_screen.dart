@@ -1,6 +1,5 @@
 import 'package:fast_delivery/core/models/ride_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
-import 'package:fast_delivery/core/services/notification_service.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:fast_delivery/presentation/screens/rating/rating_sheet.dart';

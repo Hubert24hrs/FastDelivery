@@ -4,10 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/hp_agreement_model.dart';
 import '../models/investor_earnings_model.dart';
+import 'notification_service.dart';
+import 'dart:convert';
 
 /// Service for handling revenue splits between investor, rider, and app
 class RevenueSplitService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final Ref _ref;
+
+  RevenueSplitService(this._ref);
 
   // Revenue split percentages
   static const double investorSharePercent = 0.50; // 50% during HP
@@ -122,6 +127,18 @@ class RevenueSplitService {
       'updatedAt': DateTime.now().toIso8601String(),
     });
 
+    // Notify Investor
+    if (earning.investorShare > 0) {
+      try {
+        await _ref.read(notificationServiceProvider).notifyInvestorEarnings(
+              bikeId: bikeId,
+              amount: earning.investorShare,
+            );
+      } catch (e) {
+        debugPrint('Error sending investor notification: $e');
+      }
+    }
+
     return earning;
   }
 
@@ -154,7 +171,22 @@ class RevenueSplitService {
 
     debugPrint('RevenueSplitService: HP agreement $agreementId completed! Bike now owned by rider.');
 
-    // TODO: Send push notification to both investor and rider
+    debugPrint('RevenueSplitService: HP agreement $agreementId completed! Bike now owned by rider.');
+
+    // Send push notification to both investor and rider
+    try {
+      await _ref.read(notificationServiceProvider).showLocalNotification(
+            title: '🎉 HP Agreement Completed!',
+            body: 'Congratulations! The Hire Purchase agreement for this bike is now complete.',
+            payload: json.encode({
+              'type': 'hp_complete',
+              'bikeId': bikeId,
+              'agreementId': agreementId,
+            }),
+          );
+    } catch (e) {
+      debugPrint('Error sending completion notification: $e');
+    }
   }
 
   /// Get HP progress for a bike
@@ -203,5 +235,5 @@ class RevenueSplitService {
 
 /// Provider for RevenueSplitService
 final revenueSplitServiceProvider = Provider<RevenueSplitService>((ref) {
-  return RevenueSplitService();
+  return RevenueSplitService(ref);
 });

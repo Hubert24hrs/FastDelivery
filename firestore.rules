@@ -3,7 +3,9 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper functions
+    // ==================== HELPER FUNCTIONS ====================
+    
+    // Authentication & Authorization
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -24,25 +26,29 @@ service cloud.firestore {
       return isAuthenticated() && getUserRole() == 'driver';
     }
 
+    // Input Validation
+    function isValidAmount(amount) {
+      return amount is number && amount > 0;
+    }
+    
+    function hasRequiredFields(requiredFields) {
+      return request.resource.data.keys().hasAll(requiredFields);
+    }
+    
+    function isImmutable(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+    
     // ==================== USERS COLLECTION ====================
     match /users/{userId} {
-      // Users can read their own profile
       allow read: if isOwner(userId) || isAdmin();
-      
-      // Users can create their own profile during signup
       allow create: if isOwner(userId);
-      
-      // Users can update their own profile, admins can update any
       allow update: if isOwner(userId) || isAdmin();
-      
-      // Only admins can delete users
       allow delete: if isAdmin();
     }
 
     // ==================== RIDES COLLECTION ====================
     match /rides/{rideId} {
-      // Passengers can read their own rides
-      // Drivers can read pending rides and rides assigned to them
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
         resource.data.driverId == request.auth.uid ||
@@ -50,10 +56,9 @@ service cloud.firestore {
         isAdmin()
       );
       
-      // Any authenticated user can create a ride request
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                    request.resource.data.userId == request.auth.uid;
       
-      // Owner can cancel, driver can update status
       allow update: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
         resource.data.driverId == request.auth.uid ||
@@ -61,10 +66,8 @@ service cloud.firestore {
         isAdmin()
       );
       
-      // Only admins can delete rides
       allow delete: if isAdmin();
       
-      // Chat messages subcollection
       match /messages/{messageId} {
         allow read, write: if isAuthenticated() && (
           get(/databases/$(database)/documents/rides/$(rideId)).data.userId == request.auth.uid ||
@@ -75,7 +78,6 @@ service cloud.firestore {
 
     // ==================== COURIERS COLLECTION ====================
     match /couriers/{courierId} {
-      // Similar rules to rides
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
         resource.data.riderId == request.auth.uid ||
@@ -95,172 +97,137 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // ==================== TRANSACTIONS COLLECTION ====================
+    // ==================== TRANSACTIONS COLLECTION (STRICT) ====================
     match /transactions/{transactionId} {
-      // Users can only read their own transactions
       allow read: if isOwner(resource.data.userId) || isAdmin();
       
-      // Transactions are created by the system (server-side) or authenticated user for themselves
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Enforce strict schema on creation
+      allow create: if isAuthenticated() && 
+                    request.resource.data.userId == request.auth.uid &&
+                    hasRequiredFields(['amount', 'type', 'userId', 'createdAt']) &&
+                    isValidAmount(request.resource.data.amount);
       
-      // No updates or deletes allowed (immutable financial records)
+      // Immutable financial records
       allow update, delete: if false;
     }
 
     // ==================== DRIVER APPLICATIONS COLLECTION ====================
     match /driver_applications/{applicationId} {
-      // Applicants can read their own application
       allow read: if isOwner(applicationId) || isAdmin();
-      
-      // Anyone authenticated can apply (create their own application)
       allow create: if isAuthenticated() && applicationId == request.auth.uid;
-      
-      // Only admins can update application status
       allow update: if isAdmin();
-      
-      // Only admins can delete applications
       allow delete: if isAdmin();
     }
 
     // ==================== RATINGS COLLECTION ====================
     match /ratings/{ratingId} {
-      // Anyone can read ratings
       allow read: if isAuthenticated();
-      
-      // Users can create ratings for their completed rides
-      allow create: if isAuthenticated();
-      
-      // No updates allowed (ratings are final)
+      allow create: if isAuthenticated() && 
+                    request.resource.data.rating is number &&
+                    request.resource.data.rating >= 1 &&
+                    request.resource.data.rating <= 5;
       allow update, delete: if isAdmin();
     }
 
     // ==================== PROMOS COLLECTION ====================
     match /promos/{promoId} {
-      // Anyone authenticated can read promos
       allow read: if isAuthenticated();
-      
-      // Only admins can create, update, delete promos
       allow create, update, delete: if isAdmin();
     }
 
     // ==================== REFERRALS COLLECTION ====================
     match /referrals/{referralId} {
-      // Users can read their own referrals
       allow read: if isAuthenticated() && (
         resource.data.referrerId == request.auth.uid ||
         resource.data.refereeId == request.auth.uid ||
         isAdmin()
       );
-      
-      // Authenticated users can create referrals
       allow create: if isAuthenticated();
-      
-      // Only admins can update/delete
       allow update, delete: if isAdmin();
     }
 
     // ==================== FAVORITE DRIVERS COLLECTION ====================
     match /favorite_drivers/{favoriteId} {
-      // Users can manage their own favorites
       allow read, write: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
     }
 
     // ==================== SAVED DESTINATIONS COLLECTION ====================
     match /saved_destinations/{destId} {
-      // Users can manage their own saved destinations
       allow read, write: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
     }
 
     // ==================== INVESTORS COLLECTION ====================
     match /investors/{investorId} {
-      // Investors can read their own profile, admins can read all
       allow read: if isOwner(investorId) || isAdmin();
-      
-      // Users can create their own investor profile
       allow create: if isOwner(investorId);
-      
-      // Investors can update their own profile, admins can update any
       allow update: if isOwner(investorId) || isAdmin();
-      
-      // Only admins can delete investor profiles
       allow delete: if isAdmin();
     }
 
-    // ==================== BIKES COLLECTION ====================
+    // ==================== BIKES COLLECTION (STRICT) ====================
     match /bikes/{bikeId} {
-      // Investors and riders can read their assigned bikes, admins can read all
       allow read: if isAuthenticated() && (
+        resource.data.status == 'pending_funding' || 
         resource.data.investorId == request.auth.uid ||
         resource.data.riderId == request.auth.uid ||
         isAdmin()
       );
       
-      // Only admins can create bikes
       allow create: if isAdmin();
       
-      // Investors, riders, and admins can update bikes
+      // Prevent investors from modifying critical pricing fields
       allow update: if isAuthenticated() && (
-        resource.data.investorId == request.auth.uid ||
-        resource.data.riderId == request.auth.uid ||
-        isAdmin()
+        (isAdmin()) ||
+        (resource.data.investorId == request.auth.uid && isImmutable('purchasePrice') && isImmutable('commission')) ||
+        (resource.data.riderId == request.auth.uid)
       );
       
-      // Only admins can delete bikes
       allow delete: if isAdmin();
     }
 
     // ==================== HP AGREEMENTS COLLECTION ====================
     match /hp_agreements/{agreementId} {
-      // Investors and riders can read their agreements
       allow read: if isAuthenticated() && (
         resource.data.investorId == request.auth.uid ||
         resource.data.riderId == request.auth.uid ||
         isAdmin()
       );
       
-      // Only admins can create agreements
-      allow create: if isAdmin();
+      allow create: if isAuthenticated() && 
+                    request.resource.data.investorId == request.auth.uid &&
+                    hasRequiredFields(['bikeId', 'totalRepayment', 'status']);
       
-      // Only admins can update agreements
       allow update: if isAdmin();
-      
-      // Only admins can delete agreements
       allow delete: if isAdmin();
     }
 
     // ==================== INVESTOR EARNINGS COLLECTION ====================
     match /investor_earnings/{earningId} {
-      // Investors can read their own earnings
       allow read: if isAuthenticated() && (
         resource.data.investorId == request.auth.uid ||
         isAdmin()
       );
-      
-      // System-generated only (via Cloud Functions in production)
-      allow create: if false;
-      
-      // Immutable records
+      allow create: if false; // System only
       allow update, delete: if false;
     }
 
-    // ==================== INVESTOR WITHDRAWALS COLLECTION ====================
+    // ==================== INVESTOR WITHDRAWALS COLLECTION (STRICT) ====================
     match /investor_withdrawals/{withdrawalId} {
-      // Investors can read their own withdrawals
       allow read: if isAuthenticated() && (
         resource.data.investorId == request.auth.uid ||
         isAdmin()
       );
       
-      // Investors can create withdrawal requests
-      allow create: if isAuthenticated() && request.resource.data.investorId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+                    request.resource.data.investorId == request.auth.uid &&
+                    isValidAmount(request.resource.data.amount) &&
+                    request.resource.data.status == 'pending';
       
-      // Only admins/system can update withdrawal status
       allow update: if isAdmin();
-      
-      // No deletions
       allow delete: if false;
     }
   }
 }
+

@@ -15,7 +15,7 @@ class AddCardScreen extends ConsumerStatefulWidget {
 class _AddCardScreenState extends ConsumerState<AddCardScreen> {
   final _amountController = TextEditingController(text: '5000');
   bool _isLoading = false;
-  bool _useMockPayment = false; // Toggle for testing without Paystack
+  final bool _useMockPayment = false; // Toggle for testing without Paystack
 
   // Quick amount options
   final List<double> _quickAmounts = [1000, 2000, 5000, 10000, 20000];

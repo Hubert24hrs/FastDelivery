@@ -377,4 +377,22 @@ class NotificationService {
       }),
     );
   }
+  // Investor earnings notification
+  Future<void> notifyInvestorEarnings({
+    required String bikeId,
+    required double amount,
+  }) async {
+    await showLocalNotification(
+      title: '💰 New Earnings Received!',
+      body: 'Your bike has generated ₦${amount.toStringAsFixed(0)} in earnings.',
+      payload: json.encode({
+        'type': 'investor_earnings',
+        'bikeId': bikeId,
+      }),
+    );
+  }
 }
+
+final notificationServiceProvider = Provider<NotificationService>((ref) {
+  return NotificationService(ref);
+});

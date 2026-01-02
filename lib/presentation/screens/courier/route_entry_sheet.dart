@@ -124,8 +124,11 @@ class _RouteEntrySheetState extends State<RouteEntrySheet> {
                 
                 // Choose on map
                 TextButton.icon(
-                  onPressed: () {
-                    // TODO: Implement map picker
+                  onPressed: () async {
+                    final result = await context.push('/location-picker');
+                    if (result != null && result is String) {
+                      _toController.text = result;
+                    }
                   },
                   icon: const Icon(Icons.map_outlined, color: AppTheme.secondaryColor),
                   label: const Text(

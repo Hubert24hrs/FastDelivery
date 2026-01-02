@@ -50,21 +50,21 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           Positioned(
             top: -100,
             left: -100,
-            child: _AnimatedOrb(color: const Color(0xFFCCFF00), size: 300)
+            child: _AnimatedOrb(color: const Color(0xFF004D26), size: 300)
                 .animate(autoPlay: false, controller: _exitController)
                 .fadeOut(duration: 600.ms),
           ),
           Positioned(
             bottom: -50,
             right: -50,
-            child: _AnimatedOrb(color: Colors.cyanAccent, size: 250)
+            child: _AnimatedOrb(color: AppTheme.primaryColor, size: 250)
                 .animate(autoPlay: false, controller: _exitController)
                 .fadeOut(duration: 600.ms),
           ),
           Positioned(
             top: 200,
             right: -100,
-            child: _AnimatedOrb(color: Colors.purpleAccent, size: 200)
+            child: _AnimatedOrb(color: const Color(0xFF00FF94), size: 200)
                 .animate(autoPlay: false, controller: _exitController)
                 .fadeOut(duration: 600.ms),
           ),

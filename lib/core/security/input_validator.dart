@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 
 /// Input validator and sanitizer for security
 class InputValidator {

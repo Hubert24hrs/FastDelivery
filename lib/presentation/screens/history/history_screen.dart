@@ -4,6 +4,7 @@ import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/background_orbs.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
+import 'package:fast_delivery/presentation/common/empty_state_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -118,7 +119,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> with SingleTicker
 
         final rides = snapshot.data ?? [];
         if (rides.isEmpty) {
-          return _buildEmptyState('No past rides', Icons.directions_car_outlined);
+          return EmptyStateWidget(
+            title: 'No past rides',
+            message: 'Your completed rides will appear here.',
+            icon: Icons.directions_car_outlined,
+            buttonText: 'Book a Ride',
+            onButtonPressed: () => context.go('/booking'),
+          );
         }
 
         return ListView.builder(
@@ -155,7 +162,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> with SingleTicker
 
         final couriers = snapshot.data ?? [];
         if (couriers.isEmpty) {
-          return _buildEmptyState('No past deliveries', Icons.local_shipping_outlined);
+          return EmptyStateWidget(
+            title: 'No past deliveries',
+            message: 'Your delivery history will appear here.',
+            icon: Icons.local_shipping_outlined,
+            buttonText: 'Send Package',
+            onButtonPressed: () => context.go('/courier'),
+          );
         }
 
         return ListView.builder(
@@ -177,21 +190,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> with SingleTicker
     );
   }
 
-  Widget _buildEmptyState(String message, IconData icon) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 64, color: Colors.white24),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            style: const TextStyle(color: Colors.white54, fontSize: 16),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildHistoryCard({
     required String title,

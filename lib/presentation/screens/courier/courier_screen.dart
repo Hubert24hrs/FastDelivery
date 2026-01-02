@@ -34,7 +34,7 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
   bool _receiverPays = false;
   
   // Multi-stop support
-  List<String> _additionalStops = [];
+  final List<String> _additionalStops = [];
   
   // Current pickup address
   String _currentAddress = 'Fetching location...';  

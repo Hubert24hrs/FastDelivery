@@ -1,4 +1,4 @@
-(import 'package:fast_delivery/core/models/driver_application_model.dart';
+import 'package:fast_delivery/core/models/driver_application_model.dart';
 import 'package:fast_delivery/core/models/user_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';

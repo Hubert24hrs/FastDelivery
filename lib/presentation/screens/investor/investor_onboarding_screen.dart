@@ -11,10 +11,12 @@ class InvestorOnboardingScreen extends ConsumerStatefulWidget {
   const InvestorOnboardingScreen({super.key});
 
   @override
-  ConsumerState<InvestorOnboardingScreen> createState() => _InvestorOnboardingScreenState();
+  ConsumerState<InvestorOnboardingScreen> createState() =>
+      _InvestorOnboardingScreenState();
 }
 
-class _InvestorOnboardingScreenState extends ConsumerState<InvestorOnboardingScreen> {
+class _InvestorOnboardingScreenState
+    extends ConsumerState<InvestorOnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   bool _isLoading = false;
@@ -65,30 +67,36 @@ class _InvestorOnboardingScreenState extends ConsumerState<InvestorOnboardingScr
       final user = ref.read(authServiceProvider).currentUser;
 
       // Create investor profile
-      await ref.read(investorServiceProvider).createInvestorProfile(
-        userId: userId,
-        email: user?.email ?? '',
-        displayName: user?.displayName,
-        phone: user?.phoneNumber,
-      );
+      await ref
+          .read(investorServiceProvider)
+          .createInvestorProfile(
+            userId: userId,
+            email: user?.email ?? '',
+            displayName: user?.displayName,
+            phone: user?.phoneNumber,
+          );
 
       // Update KYC (mock verification - would call Paystack Verify in production)
       if (_bvnController.text.isNotEmpty && _ninController.text.isNotEmpty) {
-        await ref.read(investorServiceProvider).updateKycStatus(
-          userId: userId,
-          bvnVerified: true, // Mock: In production, verify via Paystack
-          ninVerified: true,
-        );
+        await ref
+            .read(investorServiceProvider)
+            .updateKycStatus(
+              userId: userId,
+              bvnVerified: true, // Mock: In production, verify via Paystack
+              ninVerified: true,
+            );
       }
 
       // Update bank details
       if (_accountNumberController.text.isNotEmpty) {
-        await ref.read(investorServiceProvider).updateBankDetails(
-          userId: userId,
-          bankName: _bankNameController.text,
-          accountNumber: _accountNumberController.text,
-          accountName: _accountNameController.text,
-        );
+        await ref
+            .read(investorServiceProvider)
+            .updateBankDetails(
+              userId: userId,
+              bankName: _bankNameController.text,
+              accountNumber: _accountNumberController.text,
+              accountName: _accountNameController.text,
+            );
       }
 
       if (mounted) {
@@ -114,9 +122,7 @@ class _InvestorOnboardingScreenState extends ConsumerState<InvestorOnboardingScr
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: AppTheme.backgroundGradient,
-        ),
+        decoration: BoxDecoration(gradient: AppTheme.backgroundGradient),
         child: SafeArea(
           child: Column(
             children: [
@@ -487,43 +493,46 @@ class _InvestorOnboardingScreenState extends ConsumerState<InvestorOnboardingScr
     required String description,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: AppTheme.primaryColor, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                Text(
-                  description,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white54,
-                    fontSize: 13,
-                  ),
+                child: Icon(icon, color: AppTheme.primaryColor, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      description,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white54,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-    ).animate().fadeIn(delay: (100 * (icon.hashCode % 5)).ms).slideX(begin: 0.1);
+        )
+        .animate()
+        .fadeIn(delay: (100 * (icon.hashCode % 5)).ms)
+        .slideX(begin: 0.1);
   }
 
   Widget _buildTextField({

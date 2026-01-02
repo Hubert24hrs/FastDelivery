@@ -5,7 +5,7 @@ import 'package:fast_delivery/core/models/bike_model.dart';
 import 'package:fast_delivery/core/models/investor_model.dart';
 import 'package:fast_delivery/core/models/hp_agreement_model.dart';
 import 'package:fast_delivery/core/models/investor_earnings_model.dart';
-import 'package:fast_delivery/core/services/analytics_service.dart';
+import 'package:fast_delivery/core/services/admin_service.dart';
 import 'package:fast_delivery/core/services/auth_service.dart';
 import 'package:fast_delivery/core/services/database_service.dart';
 import 'package:fast_delivery/core/services/location_service.dart';
@@ -89,8 +89,8 @@ final currentUserRoleProvider = StreamProvider<String?>((ref) {
 // ==================== INVESTOR PROVIDERS ====================
 
 // Investor Service
-final investorServiceProvider = Provider<InvestorService>((ref) => InvestorService());
-final revenueSplitServiceProvider = Provider<RevenueSplitService>((ref) => RevenueSplitService());
+final investorServiceProvider = Provider<InvestorService>((ref) => InvestorService(ref));
+final revenueSplitServiceProvider = Provider<RevenueSplitService>((ref) => RevenueSplitService(ref));
 
 // Current Investor Profile
 final currentInvestorProvider = StreamProvider<InvestorModel?>((ref) {
@@ -138,3 +138,10 @@ final isInvestorProvider = FutureProvider<bool>((ref) async {
   if (userId == null) return false;
   return ref.watch(investorServiceProvider).isInvestor(userId);
 });
+
+// Admin Service Provider
+final adminServiceProvider = Provider<AdminService>((ref) {
+  return AdminService(FirebaseFirestore.instance);
+});
+
+// --- Constants ---

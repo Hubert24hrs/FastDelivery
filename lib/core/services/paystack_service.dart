@@ -2,6 +2,9 @@ import 'dart:math';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Conditional import for Paystack (not supported on web)
 import 'paystack_stub.dart'
@@ -117,6 +120,91 @@ class PaystackService {
     final flatFee = 100.0;
     final totalFee = percentageFee + flatFee;
     return totalFee > 2000 ? 2000 : totalFee;
+  }
+  /// Initiate a transfer (withdrawal) to a bank account
+  Future<Map<String, dynamic>> initiateTransfer({
+    required double amount,
+    required String bankCode,
+    required String accountNumber,
+    required String accountName,
+    String? reason,
+  }) async {
+    // 1. Create Transfer Recipient
+    final recipientCode = await _createTransferRecipient(
+      name: accountName,
+      accountNumber: accountNumber,
+      bankCode: bankCode,
+    );
+
+    if (recipientCode == null) {
+      throw Exception('Failed to create transfer recipient');
+    }
+
+    // 2. Initiate Transfer
+    final secretKey = dotenv.env['PAYSTACK_SECRET_KEY'];
+    if (secretKey == null) {
+      throw Exception('Paystack Secret Key not found in .env');
+    }
+
+    final url = Uri.parse('https://api.paystack.co/transfer');
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $secretKey',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        'source': 'balance',
+        'reason': reason ?? 'Fast Delivery Withdrawal',
+        'amount': (amount * 100).toInt(), // Convert to kobo
+        'recipient': recipientCode,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['status'] == true) {
+        return data['data'];
+      }
+    }
+
+    throw Exception('Transfer failed: ${response.body}');
+  }
+
+  /// Create a Transfer Recipient
+  Future<String?> _createTransferRecipient({
+    required String name,
+    required String accountNumber,
+    required String bankCode,
+  }) async {
+    final secretKey = dotenv.env['PAYSTACK_SECRET_KEY'];
+    if (secretKey == null) return null;
+
+    final url = Uri.parse('https://api.paystack.co/transferrecipient');
+    final response = await http.post(
+      url,
+      headers: {
+        'Authorization': 'Bearer $secretKey',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        'type': 'nuban',
+        'name': name,
+        'account_number': accountNumber,
+        'bank_code': bankCode,
+        'currency': 'NGN',
+      }),
+    );
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['status'] == true) {
+        return data['data']['recipient_code'];
+      }
+    }
+    
+    debugPrint('Create recipient error: ${response.body}');
+    return null;
   }
 }
 

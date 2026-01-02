@@ -4,6 +4,7 @@ import 'package:fast_delivery/core/utils/role_guard.dart';
 import 'package:fast_delivery/core/utils/router_utils.dart';
 import 'package:fast_delivery/presentation/screens/admin/admin_dashboard_screen.dart';
 import 'package:fast_delivery/presentation/screens/auth/login_screen.dart';
+import 'package:fast_delivery/presentation/screens/common/location_picker_screen.dart';
 import 'package:fast_delivery/presentation/screens/booking/destination_search_screen.dart';
 import 'package:fast_delivery/presentation/screens/chat/chat_screen.dart';
 import 'package:fast_delivery/presentation/screens/courier/courier_screen.dart';
@@ -32,6 +33,10 @@ import 'package:fast_delivery/presentation/screens/wallet/transaction_history_sc
 import 'package:fast_delivery/presentation/screens/wallet/wallet_screen.dart';
 import 'package:fast_delivery/presentation/screens/investor/investor_onboarding_screen.dart';
 import 'package:fast_delivery/presentation/screens/investor/investor_dashboard_screen.dart';
+import 'package:fast_delivery/presentation/screens/investor/fund_bike_screen.dart';
+import 'package:fast_delivery/presentation/screens/investor/bike_detail_screen.dart';
+import 'package:fast_delivery/presentation/screens/investor/investor_earnings_screen.dart';
+import 'package:fast_delivery/presentation/screens/investor/investor_withdraw_screen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -97,6 +102,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/map',
         builder: (context, state) => const MapScreen(),
+      ),
+      GoRoute(
+        path: '/location-picker',
+        builder: (context, state) => const LocationPickerScreen(),
       ),
       GoRoute(
         path: '/destination',
@@ -266,22 +275,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/investor/fund-bike',
-        builder: (context, state) => const InvestorDashboardScreen(), // TODO: Create FundBikeScreen
+        builder: (context, state) => const FundBikeScreen(),
       ),
       GoRoute(
         path: '/investor/earnings',
-        builder: (context, state) => const InvestorDashboardScreen(), // TODO: Create InvestorEarningsScreen
+        builder: (context, state) => const InvestorEarningsScreen(),
       ),
       GoRoute(
         path: '/investor/withdraw',
-        builder: (context, state) => const InvestorDashboardScreen(), // TODO: Create InvestorWithdrawScreen
+        builder: (context, state) => const InvestorWithdrawScreen(),
       ),
       GoRoute(
         path: '/investor/bike/:bikeId',
         builder: (context, state) {
-          final bikeId = state.pathParameters['bikeId'];
+          final bikeId = state.pathParameters['bikeId']!;
           debugPrint('Investor bike detail: bikeId=$bikeId');
-          return const InvestorDashboardScreen(); // TODO: Create BikeDetailScreen
+          return BikeDetailScreen(bikeId: bikeId);
         },
       ),
     ],

@@ -1,4 +1,5 @@
 import 'package:fast_delivery/core/models/bike_model.dart';
+import 'package:fast_delivery/presentation/common/empty_state_widget.dart';
 import 'package:fast_delivery/core/models/hp_agreement_model.dart';
 import 'package:fast_delivery/core/models/investor_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
@@ -10,55 +11,27 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 
 class InvestorDashboardScreen extends ConsumerStatefulWidget {
   const InvestorDashboardScreen({super.key});
 
   @override
-  ConsumerState<InvestorDashboardScreen> createState() => _InvestorDashboardScreenState();
+  ConsumerState<InvestorDashboardScreen> createState() =>
+      _InvestorDashboardScreenState();
 }
 
-class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScreen> {
+class _InvestorDashboardScreenState
+    extends ConsumerState<InvestorDashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
-    final investorAsync = ref.watch(currentInvestorProvider);
-    final bikesAsync = ref.watch(investorBikesProvider);
-    final agreementsAsync = ref.watch(investorAgreementsProvider);
+    // 1. Watch Investor Profile
+    final investorAsync = ref.watch(investorProfileProvider(widget.userId ?? ref.watch(currentUserIdProvider)!));
 
     return Scaffold(
-      key: _scaffoldKey,
-      drawer: const AppDrawer(),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: AppTheme.backgroundGradient,
-        ),
-        child: Stack(
-          children: [
-            const BackgroundOrbs(),
-            investorAsync.when(
-              data: (investor) {
-                if (investor == null) {
-                  // Not an investor yet, redirect to onboarding
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    context.go('/investor/onboarding');
-                  });
-                  return const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  );
-                }
-                return _buildDashboard(
-                  investor,
-                  bikesAsync.maybeWhen(data: (b) => b, orElse: () => []),
-                  agreementsAsync.maybeWhen(data: (a) => a, orElse: () => []),
-                );
-              },
-              loading: () => Center(
-                child: CircularProgressIndicator(color: AppTheme.primaryColor),
-              ),
-              error: (e, _) => Center(
-                child: Text('Error: $e', style: const TextStyle(color: Colors.red)),
+                ),
               ),
             ),
           ],
@@ -91,17 +64,18 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
                   const SizedBox(height: 24),
                   _buildSectionTitle('Quick Actions'),
                   const SizedBox(height: 16),
-                  _buildQuickActions()
-                      .animate()
-                      .fadeIn(delay: 200.ms, duration: 400.ms),
+                  _buildQuickActions().animate().fadeIn(
+                    delay: 200.ms,
+                    duration: 400.ms,
+                  ),
                   const SizedBox(height: 24),
                   _buildSectionTitle('Your Bikes (${bikes.length})'),
                   const SizedBox(height: 16),
                   if (bikes.isEmpty)
                     _buildEmptyBikes()
                   else
-                    ...bikes.asMap().entries.map((entry) =>
-                      _buildBikeCard(entry.value, agreements)
+                    ...bikes.asMap().entries.map(
+                      (entry) => _buildBikeCard(entry.value, agreements)
                           .animate()
                           .fadeIn(delay: (300 + entry.key * 100).ms)
                           .slideX(begin: 0.1, end: 0),
@@ -109,9 +83,10 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
                   const SizedBox(height: 24),
                   _buildSectionTitle('AI Insights'),
                   const SizedBox(height: 16),
-                  _buildAIInsightsCard()
-                      .animate()
-                      .fadeIn(delay: 500.ms, duration: 400.ms),
+                  _buildAIInsightsCard().animate().fadeIn(
+                    delay: 500.ms,
+                    duration: 400.ms,
+                  ),
                   const SizedBox(height: 20),
                 ],
               ),
@@ -185,7 +160,9 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
                 Text(
                   investor.isKycComplete ? 'Verified' : 'Pending',
                   style: GoogleFonts.plusJakartaSans(
-                    color: investor.isKycComplete ? Colors.green : Colors.orange,
+                    color: investor.isKycComplete
+                        ? Colors.green
+                        : Colors.orange,
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
@@ -202,7 +179,7 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
+          colors: [AppTheme.primaryColor, const Color(0xFF00FF94)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -267,7 +244,7 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
                         Text(
                           _formatAmount(investor.walletBalance),
                           style: GoogleFonts.spaceGrotesk(
-                            fontSize: 36,
+                            fontSize: MediaQuery.of(context).size.width * 0.08, // Responsive font size
                             fontWeight: FontWeight.w800,
                             color: Colors.white,
                             height: 1,
@@ -294,7 +271,10 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () => context.push('/investor/withdraw'),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/investor/withdraw');
+                    },
                     borderRadius: BorderRadius.circular(14),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -325,11 +305,23 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildMiniStat('Invested', '₦${_formatAmount(investor.totalInvested)}', Icons.trending_up),
+                _buildMiniStat(
+                  'Invested',
+                  '₦${_formatAmount(investor.totalInvested)}',
+                  Icons.trending_up,
+                ),
                 Container(width: 1, height: 30, color: Colors.white24),
-                _buildMiniStat('Returns', '₦${_formatAmount(investor.totalReturns)}', Icons.attach_money),
+                _buildMiniStat(
+                  'Returns',
+                  '₦${_formatAmount(investor.totalReturns)}',
+                  Icons.attach_money,
+                ),
                 Container(width: 1, height: 30, color: Colors.white24),
-                _buildMiniStat('Bikes', '${investor.activeBikes}', Icons.motorcycle),
+                _buildMiniStat(
+                  'Bikes',
+                  '${investor.activeBikes}',
+                  Icons.motorcycle,
+                ),
               ],
             ),
           ),
@@ -371,8 +363,8 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                const Color(0xFF3949AB),
-                const Color(0xFF3949AB).withValues(alpha: 0.3),
+                AppTheme.primaryColor,
+                AppTheme.primaryColor.withValues(alpha: 0.3),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -380,7 +372,7 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
             borderRadius: BorderRadius.circular(2),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF3949AB).withValues(alpha: 0.5),
+                color: AppTheme.primaryColor.withValues(alpha: 0.5),
                 blurRadius: 8,
               ),
             ],
@@ -405,13 +397,29 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
       physics: const BouncingScrollPhysics(),
       child: Row(
         children: [
-          _buildActionChip(Icons.add_circle, 'Fund Bike', () => context.push('/investor/fund-bike')),
+          _buildActionChip(
+            Icons.add_circle,
+            'Fund Bike',
+            () => context.push('/investor/fund-bike'),
+          ),
           const SizedBox(width: 12),
-          _buildActionChip(Icons.bar_chart, 'Earnings', () => context.push('/investor/earnings')),
+          _buildActionChip(
+            Icons.bar_chart,
+            'Earnings',
+            () => context.push('/investor/earnings'),
+          ),
           const SizedBox(width: 12),
-          _buildActionChip(Icons.history, 'Withdrawals', () => context.push('/investor/withdraw')),
+          _buildActionChip(
+            Icons.history,
+            'Withdrawals',
+            () => context.push('/investor/withdraw'),
+          ),
           const SizedBox(width: 12),
-          _buildActionChip(Icons.settings, 'Settings', () => context.push('/settings')),
+          _buildActionChip(
+            Icons.settings,
+            'Settings',
+            () => context.push('/settings'),
+          ),
         ],
       ),
     );
@@ -445,10 +453,10 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF3949AB).withValues(alpha: 0.2),
+                color: AppTheme.primaryColor.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: const Color(0xFF3949AB), size: 18),
+              child: Icon(icon, color: AppTheme.primaryColor, size: 18),
             ),
             const SizedBox(width: 10),
             Text(
@@ -467,52 +475,18 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
 
   Widget _buildEmptyBikes() {
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white12),
       ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.motorcycle_outlined,
-            size: 60,
-            color: Colors.white30,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No bikes yet',
-            style: GoogleFonts.spaceGrotesk(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Fund your first bike to start earning returns',
-            style: GoogleFonts.plusJakartaSans(
-              color: Colors.white54,
-              fontSize: 14,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: () => context.push('/investor/fund-bike'),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Fund a Bike'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3949AB),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ],
+      child: EmptyStateWidget(
+        title: 'No bikes yet',
+        message: 'Fund your first bike to start earning returns',
+        icon: Icons.motorcycle_outlined,
+        buttonText: 'Fund a Bike',
+        onButtonPressed: () => context.push('/investor/fund-bike'),
       ),
     );
   }
@@ -593,7 +567,9 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(bike.status).withValues(alpha: 0.2),
+                        color: _getStatusColor(
+                          bike.status,
+                        ).withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -629,7 +605,9 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
                                 value: progress,
                                 backgroundColor: Colors.white12,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  progress >= 1.0 ? Colors.green : const Color(0xFF3949AB),
+                                  progress >= 1.0
+                                      ? Colors.green
+                                      : const Color(0xFF3949AB),
                                 ),
                                 minHeight: 6,
                               ),
@@ -653,8 +631,14 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _buildBikeStatItem('Rides', '${bike.totalRides}'),
-                      _buildBikeStatItem('Earnings', '₦${_formatAmount(bike.totalEarnings)}'),
-                      _buildBikeStatItem('Remaining', '₦${_formatAmount(agreement.remainingBalance)}'),
+                      _buildBikeStatItem(
+                        'Earnings',
+                        '₦${_formatAmount(bike.totalEarnings)}',
+                      ),
+                      _buildBikeStatItem(
+                        'Remaining',
+                        '₦${_formatAmount(agreement.remainingBalance)}',
+                      ),
                     ],
                   ),
                 ],
@@ -797,7 +781,7 @@ class _InvestorDashboardScreenState extends ConsumerState<InvestorDashboardScree
       case 'active':
         return Colors.green;
       case 'funded':
-        return const Color(0xFF3949AB);
+        return AppTheme.primaryColor;
       case 'pending_funding':
         return Colors.orange;
       case 'completed':
