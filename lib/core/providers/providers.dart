@@ -1,4 +1,5 @@
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fast_delivery/core/models/courier_model.dart';
 import 'package:fast_delivery/core/models/ride_model.dart';
 import 'package:fast_delivery/core/models/bike_model.dart';
@@ -10,6 +11,7 @@ import 'package:fast_delivery/core/services/auth_service.dart';
 import 'package:fast_delivery/core/services/database_service.dart';
 import 'package:fast_delivery/core/services/location_service.dart';
 import 'package:fast_delivery/core/services/notification_service.dart';
+import 'package:fast_delivery/core/services/paystack_service.dart';
 import 'package:fast_delivery/core/services/payment_service.dart';
 import 'package:fast_delivery/core/services/saved_destinations_service.dart';
 import 'package:fast_delivery/core/services/earnings_service.dart';
@@ -142,6 +144,11 @@ final isInvestorProvider = FutureProvider<bool>((ref) async {
 // Admin Service Provider
 final adminServiceProvider = Provider<AdminService>((ref) {
   return AdminService(FirebaseFirestore.instance);
+});
+
+// Paystack Service Provider
+final paystackServiceProvider = Provider<PaystackService>((ref) {
+  return PaystackService();
 });
 
 // --- Constants ---

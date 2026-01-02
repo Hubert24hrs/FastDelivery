@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/investor_model.dart';
+import 'package:fast_delivery/core/models/investor_model.dart';
 import '../models/bike_model.dart';
 import '../models/hp_agreement_model.dart';
 import '../models/investor_earnings_model.dart';
@@ -350,15 +350,18 @@ class InvestorService {
       // We will skip heavy daily limit query INSIDE transaction to avoid contention/slowdown,
       // relying on the initial checking logic or moving limit tracking to the user document.
 
-      final bankDetails = BankDetails.fromMap(bankDetailsMap);
+      // Bypass BankDetails class usage to avoid import issues
+      final bankName = bankDetailsMap['bankName'] as String? ?? '';
+      final accountNumber = bankDetailsMap['accountNumber'] as String? ?? '';
+      final accountName = bankDetailsMap['accountName'] as String? ?? '';
 
       withdrawal = InvestorWithdrawalModel(
         id: withdrawalId,
         investorId: investorId,
         amount: amount,
-        bankName: bankDetails.bankName,
-        accountNumber: bankDetails.accountNumber,
-        accountName: bankDetails.accountName,
+        bankName: bankName,
+        accountNumber: accountNumber,
+        accountName: accountName,
         status: 'processing',
         createdAt: DateTime.now(),
       );
@@ -380,17 +383,15 @@ class InvestorService {
     // For Client-side: try call, if fail, run ANOTHER transaction to refund.
 
     try {
-      // We need to re-fetch investor to get bank code safely or just pass it from before?
-      // For simplicity/safety, we assume bankCode is in the previously read details.
-      // But we can't easily extract it from the transaction scope closure without cleaner code.
-      // We will re-read using the public helper since we are now outside transaction.
+      // Re-read investor to get bankCode safely
       final investor = await getInvestorProfile(investorId); 
+      final bankCode = investor?.bankDetails?.bankCode ?? '';
       
       final transferData = await _ref.read(paystackServiceProvider).initiateTransfer(
             amount: amount,
-            bankCode: investor?.bankDetails?.bankCode ?? '',
-            accountNumber: investor!.bankDetails!.accountNumber,
-            accountName: investor.bankDetails!.accountName,
+            bankCode: bankCode,
+            accountNumber: withdrawal!.accountNumber,
+            accountName: withdrawal!.accountName,
             reason: 'Fast Delivery Withdrawal',
           );
 

@@ -7,6 +7,7 @@ import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/app_drawer.dart';
 import 'package:fast_delivery/presentation/common/background_orbs.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,7 +29,8 @@ class _InvestorDashboardScreenState
   @override
   Widget build(BuildContext context) {
     // 1. Watch Investor Profile
-    final investorAsync = ref.watch(investorProfileProvider(widget.userId ?? ref.watch(currentUserIdProvider)!));
+    final userId = ref.watch(currentUserIdProvider);
+    final investorAsync = ref.watch(investorProfileProvider(userId!));
 
     return Scaffold(
                 ),

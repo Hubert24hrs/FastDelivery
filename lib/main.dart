@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
-import 'package:fast_delivery/presentation/common/background_orbs.dart';
+
 import 'package:fast_delivery/presentation/common/connectivity_wrapper.dart';
 import 'package:fast_delivery/presentation/common/error_boundary.dart';
 import 'package:flutter/foundation.dart';

@@ -1,11 +1,12 @@
 
-import 'dart:io';
+import 'dart:typed_data'; // Add this
 
 import 'package:fast_delivery/core/models/user_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/background_orbs.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
+import 'package:flutter/foundation.dart'; // for kIsWeb
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,7 +23,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isEditing = false;
   bool _isLoading = false;
-  File? _imageFile;
+  Uint8List? _imageBytes; // Changed from File? to Uint8List?
   final ImagePicker _picker = ImagePicker();
 
   late TextEditingController _nameController;
@@ -64,7 +65,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     try {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
       if (image != null) {
-        setState(() => _imageFile = File(image.path));
+        final bytes = await image.readAsBytes();
+        setState(() => _imageBytes = bytes);
       }
     } catch (e) {
       if (mounted) {
@@ -81,8 +83,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       String? photoUrl = currentUser.photoUrl;
 
       // Upload Photo if changed
-      if (_imageFile != null) {
-        photoUrl = await ref.read(storageServiceProvider).uploadProfilePhoto(currentUser.id, _imageFile!);
+      if (_imageBytes != null) {
+        // Pass bytes instead of File
+        photoUrl = await ref.read(storageServiceProvider).uploadProfilePhoto(currentUser.id, _imageBytes!);
       }
 
       final updatedUser = UserModel(
@@ -106,7 +109,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         );
         setState(() {
           _isEditing = false;
-          _imageFile = null;
+          _imageBytes = null;
         });
       }
     } catch (e) {
@@ -120,7 +123,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  Future<void> _updateAddress(UserModel currentUser, String type, String address) async {
+  // ... methods continue ...
     try {
       final updatedUser = UserModel(
         id: currentUser.id,
@@ -315,10 +318,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               child: CircleAvatar(
                                 radius: 60,
                                 backgroundColor: Colors.white10,
-                                backgroundImage: _imageFile != null 
-                                    ? FileImage(_imageFile!) as ImageProvider
+                                backgroundImage: _imageBytes != null 
+                                    ? MemoryImage(_imageBytes!) as ImageProvider
                                     : (user.photoUrl != null ? NetworkImage(user.photoUrl!) : null),
-                                child: (_imageFile == null && user.photoUrl == null)
+                                child: (_imageBytes == null && user.photoUrl == null)
                                     ? const Icon(Icons.person, size: 60, color: Colors.white54)
                                     : null,
                               ),

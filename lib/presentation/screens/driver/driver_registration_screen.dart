@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:fast_delivery/core/models/driver_application_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
@@ -29,11 +29,11 @@ class _DriverRegistrationScreenState extends ConsumerState<DriverRegistrationScr
   final _yearController = TextEditingController();
   final _plateController = TextEditingController();
 
-  // Document Files
-  File? _licenseImage;
-  File? _registrationImage;
-  File? _insuranceImage;
-  File? _permitImage;
+  // Document Files (Bytes)
+  Uint8List? _licenseImage;
+  Uint8List? _registrationImage;
+  Uint8List? _insuranceImage;
+  Uint8List? _permitImage;
 
   @override
   void dispose() {
@@ -95,14 +95,14 @@ class _DriverRegistrationScreenState extends ConsumerState<DriverRegistrationScr
               ),
               const SizedBox(height: 16),
               
-              _buildUploadButton('Driver\'s License', _licenseImage, (file) => setState(() => _licenseImage = file)),
+              _buildUploadButton('Driver\'s License', _licenseImage, (bytes) => setState(() => _licenseImage = bytes)),
               const SizedBox(height: 12),
-              _buildUploadButton('Vehicle Registration', _registrationImage, (file) => setState(() => _registrationImage = file)),
+              _buildUploadButton('Vehicle Registration', _registrationImage, (bytes) => setState(() => _registrationImage = bytes)),
               const SizedBox(height: 12),
-              _buildUploadButton('Insurance Certificate', _insuranceImage, (file) => setState(() => _insuranceImage = file)),
+              _buildUploadButton('Insurance Certificate', _insuranceImage, (bytes) => setState(() => _insuranceImage = bytes)),
               if (!isDriver) ...[
                 const SizedBox(height: 12),
-                _buildUploadButton('Courier Permit', _permitImage, (file) => setState(() => _permitImage = file)),
+                _buildUploadButton('Courier Permit', _permitImage, (bytes) => setState(() => _permitImage = bytes)),
               ],
 
               const SizedBox(height: 40),
@@ -143,8 +143,8 @@ class _DriverRegistrationScreenState extends ConsumerState<DriverRegistrationScr
     );
   }
 
-  Widget _buildUploadButton(String label, File? imageFile, Function(File) onImageSelected) {
-    final isSelected = imageFile != null;
+  Widget _buildUploadButton(String label, Uint8List? imageBytes, Function(Uint8List) onImageSelected) {
+    final isSelected = imageBytes != null;
 
     return InkWell(
       onTap: () => _pickImage(onImageSelected),
@@ -194,11 +194,12 @@ class _DriverRegistrationScreenState extends ConsumerState<DriverRegistrationScr
     );
   }
 
-  Future<void> _pickImage(Function(File) onImageSelected) async {
+  Future<void> _pickImage(Function(Uint8List) onImageSelected) async {
     try {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
       if (image != null) {
-        onImageSelected(File(image.path));
+        final bytes = await image.readAsBytes();
+        onImageSelected(bytes);
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
@@ -229,6 +230,7 @@ class _DriverRegistrationScreenState extends ConsumerState<DriverRegistrationScr
         final storage = ref.read(storageServiceProvider);
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         
+        // uploadDocument now accepts Uint8List
         final licenseUrl = await storage.uploadDocument(userId, 'license_$timestamp', _licenseImage!);
         final registrationUrl = await storage.uploadDocument(userId, 'registration_$timestamp', _registrationImage!);
         final insuranceUrl = await storage.uploadDocument(userId, 'insurance_$timestamp', _insuranceImage!);
