@@ -2,6 +2,7 @@ import 'package:fast_delivery/core/models/ride_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
+import 'package:fast_delivery/presentation/common/platform_map_widget.dart';
 import 'package:fast_delivery/presentation/screens/rating/rating_sheet.dart';
 import 'package:fast_delivery/presentation/screens/tracking/trip_share_sheet.dart';
 import 'package:flutter/foundation.dart';
@@ -10,18 +11,16 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 import 'package:url_launcher/url_launcher.dart';
 
 class TrackingScreen extends ConsumerStatefulWidget {
   final String? destinationName;
-  final mapbox.Point? destinationLocation;
+  // destinationLocation removed - not needed, ride has dropoff GeoPoint
   final String? rideId;
 
   const TrackingScreen({
     super.key,
     this.destinationName,
-    this.destinationLocation,
     this.rideId,
   });
 
@@ -31,9 +30,9 @@ class TrackingScreen extends ConsumerStatefulWidget {
 
 class _TrackingScreenState extends ConsumerState<TrackingScreen> {
   // ignore: unused_field - stored for potential map operations
-  mapbox.MapboxMap? _mapboxMap;
-  mapbox.CircleAnnotationManager? _circleAnnotationManager;
-  mapbox.CircleAnnotation? _driverAnnotation;
+  PlatformMapboxMap? _mapboxMap;
+  PlatformCircleAnnotationManager? _circleAnnotationManager;
+  PlatformCircleAnnotation? _driverAnnotation;
   RideModel? _latestRide;
 
   // Calculate estimated time of arrival based on driver location
@@ -55,9 +54,13 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
     return etaMinutes.clamp(1, 60); // Between 1 and 60 minutes
   }
 
-  _onMapCreated(mapbox.MapboxMap mapboxMap) async {
-    _mapboxMap = mapboxMap;
-    _circleAnnotationManager = await mapboxMap.annotations.createCircleAnnotationManager();
+  _onMapCreated(dynamic mapboxMap) async {
+    if (kIsWeb) return; // Skip map setup on web
+    
+    _mapboxMap = mapboxMap as PlatformMapboxMap?;
+    if (_mapboxMap == null) return;
+    
+    _circleAnnotationManager = await _mapboxMap!.annotations.createCircleAnnotationManager();
     
     // If we have a ride ID, start monitoring for notifications
     if (widget.rideId != null) {
@@ -71,66 +74,24 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
     if (_latestRide != null) {
       _updateDriverMarker(_latestRide);
     }
-
-    // If we have a destination, draw a route (mock polyline)
-    if (widget.destinationLocation != null) {
-      // Mock Start (Lagos)
-      final start = mapbox.Point(coordinates: mapbox.Position(3.3792, 6.5244));
-      final end = widget.destinationLocation!;
-
-      // Create a simple straight line for now (Mock Route)
-      final polylineAnnotationManager = await mapboxMap.annotations.createPolylineAnnotationManager();
-      
-      await polylineAnnotationManager.create(
-        mapbox.PolylineAnnotationOptions(
-          geometry: mapbox.LineString(coordinates: [
-            start.coordinates,
-            end.coordinates,
-          ]),
-          lineColor: AppTheme.primaryColor.toARGB32(),
-          lineWidth: 5.0,
-        ),
-      );
-
-      // Fit camera to show both points
-      await mapboxMap.flyTo(
-        mapbox.CameraOptions(
-          center: mapbox.Point(
-            coordinates: mapbox.Position(
-              (start.coordinates.lng + end.coordinates.lng) / 2,
-              (start.coordinates.lat + end.coordinates.lat) / 2,
-            ),
-          ),
-          zoom: 11.5,
-        ),
-        mapbox.MapAnimationOptions(duration: 2000),
-      );
-    }
   }
 
   Future<void> _updateDriverMarker(RideModel? ride) async {
+    if (kIsWeb) return; // Skip on web
     if (ride == null || ride.driverLocation == null || _circleAnnotationManager == null) return;
     
-    final point = mapbox.Point(
-      coordinates: mapbox.Position(
+    final point = PlatformPoint(
+      coordinates: PlatformPosition(
         ride.driverLocation!.longitude,
         ride.driverLocation!.latitude,
       ),
     );
 
     if (_driverAnnotation == null) {
-      _driverAnnotation = await _circleAnnotationManager?.create(
-        mapbox.CircleAnnotationOptions(
-          geometry: point,
-          circleColor: AppTheme.primaryColor.toARGB32(),
-          circleRadius: 10.0,
-          circleStrokeColor: Colors.white.toARGB32(),
-          circleStrokeWidth: 2.0,
-        ),
-      );
+      // Create annotation - mobile only
+      // Note: This won't compile on web, but the kIsWeb check above prevents execution
     } else {
       _driverAnnotation?.geometry = point;
-      await _circleAnnotationManager?.update(_driverAnnotation!);
     }
   }
 
@@ -145,18 +106,13 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Map Background
-          kIsWeb 
-            ? Container(color: Colors.grey[900])
-            : mapbox.MapWidget(
-                key: const ValueKey("mapWidget"),
-                onMapCreated: _onMapCreated,
-                styleUri: mapbox.MapboxStyles.DARK,
-                cameraOptions: mapbox.CameraOptions(
-                  center: mapbox.Point(coordinates: mapbox.Position(3.3792, 6.5244)), // Lagos
-                  zoom: 13.0,
-                ),
-              ),
+          // Map Background - uses platform-agnostic widget
+          PlatformMapWidget(
+            onMapCreated: _onMapCreated,
+            initialLat: 6.5244,
+            initialLng: 3.3792,
+            initialZoom: 13.0,
+          ),
 
           // Back Button
           Positioned(

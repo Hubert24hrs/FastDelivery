@@ -1,5 +1,5 @@
 
-import 'dart:typed_data'; // Add this
+
 
 import 'package:fast_delivery/core/models/user_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
@@ -123,7 +123,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  // ... methods continue ...
+
+  Future<void> _updateAddress(UserModel currentUser, String type, String address) async {
     try {
       final updatedUser = UserModel(
         id: currentUser.id,

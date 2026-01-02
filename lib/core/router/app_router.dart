@@ -196,7 +196,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           debugPrint('Router /tracking: rideId=$rideId, from extra=${extra?['rideId']}, from query=${state.uri.queryParameters['rideId']}');
           return TrackingScreen(
             destinationName: destinationName,
-            destinationLocation: extra?['destinationLocation'],
             rideId: rideId,
           );
         },

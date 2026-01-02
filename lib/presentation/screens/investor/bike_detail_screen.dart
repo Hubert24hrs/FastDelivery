@@ -9,8 +9,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
-import 'package:cloud_firestore/cloud_firestore.dart' as firestore;
+
 import 'package:fast_delivery/core/models/investor_earnings_model.dart';
 import 'package:intl/intl.dart';
 
@@ -24,7 +23,7 @@ class BikeDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _BikeDetailScreenState extends ConsumerState<BikeDetailScreen> {
-  mapbox.MapboxMap? _mapboxMap;
+  // Map not used in this screen - field kept for future implementation
 
   @override
   Widget build(BuildContext context) {
@@ -185,57 +184,34 @@ class _BikeDetailScreenState extends ConsumerState<BikeDetailScreen> {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: bike.currentLocation != null
-            ? mapbox.MapWidget(
-                onMapCreated: (map) {
-                  _mapboxMap = map;
-                  _updateMapLocation(bike.currentLocation!);
-                },
-              )
-            : Container(
-                color: AppTheme.surfaceColor,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.location_off, size: 48, color: Colors.white30),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Location not available',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: Colors.white54,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
+        child: Container(
+          color: AppTheme.surfaceColor,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  bike.currentLocation != null ? Icons.location_on : Icons.location_off,
+                  size: 48,
+                  color: bike.currentLocation != null ? AppTheme.primaryColor : Colors.white30,
                 ),
-              ),
-      ),
-    );
-  }
-
-  void _updateMapLocation(firestore.GeoPoint location) {
-    _mapboxMap?.setCamera(
-      mapbox.CameraOptions(
-        center: mapbox.Point(
-          coordinates: mapbox.Position(location.longitude, location.latitude),
-        ),
-        zoom: 14.0,
-      ),
-    );
-
-    // Add marker
-    _mapboxMap?.annotations.createPointAnnotationManager().then((manager) {
-      manager.create(
-        mapbox.PointAnnotationOptions(
-          geometry: mapbox.Point(
-            coordinates: mapbox.Position(location.longitude, location.latitude),
+                const SizedBox(height: 12),
+                Text(
+                  bike.currentLocation != null
+                      ? 'Location: ${bike.currentLocation!.latitude.toStringAsFixed(4)}, ${bike.currentLocation!.longitude.toStringAsFixed(4)}'
+                      : 'Location not available',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white54,
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
-          iconImage: 'motorcycle',
         ),
-      );
-    });
+      ),
+    );
   }
 
   Widget _buildStatsCards(BikeModel bike) {

@@ -9,9 +9,6 @@ class ApiKeyManager {
   factory ApiKeyManager() => _instance;
   ApiKeyManager._internal();
 
-  // Obfuscated keys - not stored as plain text
-  static const String _mapboxKeyHash = 'mapbox_access_token';
-  static const String _paystackKeyHash = 'paystack_public_key';
 
   /// Get Mapbox access token
   String? getMapboxToken() {

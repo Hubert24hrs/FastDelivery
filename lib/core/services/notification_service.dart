@@ -181,7 +181,7 @@ class NotificationService {
     } else if (data['type'] == 'ride_update') {
        // Navigate to ride details or map based on status
        // If status is completed, maybe go to rating
-       final status = data['status'];
+       final _ = data['status'];
        // For now, push to home which will redirect to active ride automatically
        router.push('/');
     }

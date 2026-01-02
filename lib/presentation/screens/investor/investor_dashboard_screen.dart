@@ -12,7 +12,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shimmer/shimmer.dart';
 
 class InvestorDashboardScreen extends ConsumerStatefulWidget {
   const InvestorDashboardScreen({super.key});
@@ -28,13 +27,49 @@ class _InvestorDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
-    // 1. Watch Investor Profile
-    final userId = ref.watch(currentUserIdProvider);
-    final investorAsync = ref.watch(investorProfileProvider(userId!));
+    // 1. Watch Investor Profile using existing currentInvestorProvider
+    final investorAsync = ref.watch(currentInvestorProvider);
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: const AppDrawer(),
+      body: Container(
+        decoration: BoxDecoration(gradient: AppTheme.backgroundGradient),
+        child: Stack(
+          children: [
+            const BackgroundOrbs(),
+            investorAsync.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: AppTheme.primaryColor),
+              ),
+              error: (error, stack) => Center(
+                child: EmptyStateWidget(
+                  title: 'Error Loading Dashboard',
+                  message: error.toString(),
+                  icon: Icons.error_outline,
                 ),
               ),
+              data: (investor) {
+                if (investor == null) {
+                  return Center(
+                    child: EmptyStateWidget(
+                      title: 'Investor Profile Not Found',
+                      message: 'Please complete your investor onboarding',
+                      icon: Icons.person_off,
+                      buttonText: 'Go Back',
+                      onButtonPressed: () => context.pop(),
+                    ),
+                  );
+                }
+
+                final bikesAsync = ref.watch(investorBikesProvider);
+                final agreementsAsync = ref.watch(investorAgreementsProvider);
+                
+                final bikes = bikesAsync.value ?? [];
+                final agreements = agreementsAsync.value ?? [];
+
+                return _buildDashboard(investor, bikes, agreements);
+              },
             ),
           ],
         ),
@@ -181,7 +216,7 @@ class _InvestorDashboardScreenState
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [AppTheme.primaryColor, const Color(0xFF00FF94)],
+          colors: [AppTheme.primaryColor, Color(0xFF00FF94)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

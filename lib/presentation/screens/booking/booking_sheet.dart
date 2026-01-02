@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fast_delivery/core/models/ride_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
-import 'package:fast_delivery/core/services/paystack_service.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +8,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 
 class BookingSheet extends ConsumerStatefulWidget {
   const BookingSheet({super.key});
@@ -92,17 +90,19 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
         debugPrint('BookingSheet: Wallet deduction complete!');
       }
 
-      // Mock coordinates
+      // Mock coordinates (lat, lng)
       debugPrint('BookingSheet: Creating mock coordinates...');
-      final mockDestination = mapbox.Point(coordinates: mapbox.Position(3.4241, 6.4281)); 
-      final mockPickup = mapbox.Point(coordinates: mapbox.Position(3.3792, 6.5244));
+      const mockDestLat = 6.4281;
+      const mockDestLng = 3.4241;
+      const mockPickupLat = 6.5244;
+      const mockPickupLng = 3.3792;
 
       debugPrint('BookingSheet: Creating RideModel...');
       final ride = RideModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         userId: userId,
-        pickupLocation: GeoPoint(mockPickup.coordinates.lat.toDouble(), mockPickup.coordinates.lng.toDouble()),
-        dropoffLocation: GeoPoint(mockDestination.coordinates.lat.toDouble(), mockDestination.coordinates.lng.toDouble()),
+        pickupLocation: GeoPoint(mockPickupLat, mockPickupLng),
+        dropoffLocation: GeoPoint(mockDestLat, mockDestLng),
         pickupAddress: 'Current Location',
         dropoffAddress: _destinationController.text.isEmpty ? 'Victoria Island' : _destinationController.text,
         price: _ridePrice,
@@ -121,7 +121,6 @@ class _BookingSheetState extends ConsumerState<BookingSheet> {
           '/tracking?rideId=${ride.id}&dest=${Uri.encodeComponent(ride.dropoffAddress)}', 
           extra: {
             'destinationName': ride.dropoffAddress,
-            'destinationLocation': mockDestination,
             'rideId': ride.id,
           },
         );

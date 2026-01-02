@@ -2,12 +2,11 @@ import 'package:fast_delivery/core/models/courier_model.dart';
 import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/glass_card.dart';
-import 'package:flutter/foundation.dart';
+import 'package:fast_delivery/presentation/common/platform_map_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 import 'package:url_launcher/url_launcher.dart';
 
 class CourierTrackingScreen extends ConsumerStatefulWidget {
@@ -21,10 +20,10 @@ class CourierTrackingScreen extends ConsumerStatefulWidget {
 
 class _CourierTrackingScreenState extends ConsumerState<CourierTrackingScreen> {
   // ignore: unused_field - assigned in onMapCreated for potential future use
-  mapbox.MapboxMap? _mapboxMap;
+  PlatformMapboxMap? _mapboxMap;
 
-  _onMapCreated(mapbox.MapboxMap mapboxMap) async {
-    _mapboxMap = mapboxMap;
+  _onMapCreated(dynamic mapboxMap) async {
+    _mapboxMap = mapboxMap as PlatformMapboxMap?;
   }
 
   @override
@@ -38,18 +37,13 @@ class _CourierTrackingScreenState extends ConsumerState<CourierTrackingScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Map Background
-          kIsWeb
-              ? Container(color: Colors.grey[900])
-              : mapbox.MapWidget(
-                  key: const ValueKey("courierMapWidget"),
-                  onMapCreated: _onMapCreated,
-                  styleUri: mapbox.MapboxStyles.DARK,
-                  cameraOptions: mapbox.CameraOptions(
-                    center: mapbox.Point(coordinates: mapbox.Position(3.3792, 6.5244)),
-                    zoom: 13.0,
-                  ),
-                ),
+          // Map Background - uses platform-agnostic widget
+          PlatformMapWidget(
+            onMapCreated: _onMapCreated,
+            initialLat: 6.5244,
+            initialLng: 3.3792,
+            initialZoom: 13.0,
+          ),
 
           // Back Button
           Positioned(

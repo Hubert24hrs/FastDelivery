@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -207,8 +207,3 @@ class PaystackService {
     return null;
   }
 }
-
-/// Provider for PaystackService
-final paystackServiceProvider = Provider<PaystackService>((ref) {
-  return PaystackService();
-});

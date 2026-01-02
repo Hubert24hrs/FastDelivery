@@ -4,12 +4,12 @@ import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/app_drawer.dart';
 import 'package:fast_delivery/presentation/screens/booking/booking_sheet.dart';
+import 'package:fast_delivery/presentation/common/platform_map_widget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +20,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  mapbox.MapboxMap? _mapboxMap;
+  // Platform map widget handles map creation internally
 
   RideModel? _activeRide;
   StreamSubscription<RideModel?>? _rideSubscription;
@@ -81,8 +81,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _startListeningToRide(rideId);
   }
 
-  _onMapCreated(mapbox.MapboxMap mapboxMap) {
-    _mapboxMap = mapboxMap;
+  _onMapCreated(dynamic mapboxMap) {
+    // Map instance available if needed for future functionality
   }
 
   // Get status display info based on ride status
@@ -140,18 +140,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       drawer: const AppDrawer(),
       body: Stack(
         children: [
-          // Map Background
-          kIsWeb
-              ? Container(color: Colors.grey[900])
-              : mapbox.MapWidget(
-                  key: const ValueKey("mapWidget"),
-                  onMapCreated: _onMapCreated,
-                  styleUri: mapbox.MapboxStyles.DARK,
-                  cameraOptions: mapbox.CameraOptions(
-                    center: mapbox.Point(coordinates: mapbox.Position(3.3792, 6.5244)),
-                    zoom: 13.0,
-                  ),
-                ),
+          // Map Background - uses platform-agnostic widget
+          PlatformMapWidget(
+            onMapCreated: _onMapCreated,
+            initialLat: 6.5244,
+            initialLng: 3.3792,
+            initialZoom: 13.0,
+          ),
           
           // Menu Button (Top Left)
           Positioned(

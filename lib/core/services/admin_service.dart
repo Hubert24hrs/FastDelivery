@@ -2,8 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fast_delivery/core/models/driver_application_model.dart';
 import 'package:fast_delivery/core/models/investor_earnings_model.dart';
 import 'package:fast_delivery/core/models/investor_model.dart';
-import 'package:fast_delivery/core/models/investor_model.dart'; // Duplicate import, will clean up
-import 'package:fast_delivery/core/models/ride_model.dart';
 
 class AdminService {
   final FirebaseFirestore _firestore;

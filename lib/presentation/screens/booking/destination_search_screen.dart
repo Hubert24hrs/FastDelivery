@@ -8,7 +8,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 
 class DestinationSearchScreen extends ConsumerStatefulWidget {
   final String? preferredDriverId;
@@ -91,14 +90,12 @@ class _DestinationSearchScreenState extends ConsumerState<DestinationSearchScree
       
       if (locations.isNotEmpty) {
         final location = locations.first;
-        final destinationPoint = mapbox.Point(
-          coordinates: mapbox.Position(location.longitude, location.latitude),
-        );
 
         if (mounted) {
           context.pop({
             'name': destinationName,
-            'location': destinationPoint,
+            'lat': location.latitude,
+            'lng': location.longitude,
             'preferredDriverId': widget.preferredDriverId,
           });
         }
@@ -121,11 +118,10 @@ class _DestinationSearchScreenState extends ConsumerState<DestinationSearchScree
 
   void _returnMock(String destinationName) {
     // Mock Destination Coordinates (e.g., Victoria Island, Lagos)
-    final mockDestination = mapbox.Point(coordinates: mapbox.Position(3.4241, 6.4281));
-
     context.pop({
       'name': destinationName,
-      'location': mockDestination,
+      'lat': 6.4281,
+      'lng': 3.4241,
       'preferredDriverId': widget.preferredDriverId,
     });
   }
@@ -455,12 +451,10 @@ class _DestinationSearchScreenState extends ConsumerState<DestinationSearchScree
   }
 
   void _selectSavedDestination(SavedDestination destination) {
-    final destinationPoint = mapbox.Point(
-      coordinates: mapbox.Position(destination.longitude, destination.latitude),
-    );
     context.pop({
       'name': destination.address,
-      'location': destinationPoint,
+      'lat': destination.latitude,
+      'lng': destination.longitude,
     });
   }
 

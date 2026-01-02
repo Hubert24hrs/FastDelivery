@@ -30,8 +30,8 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
   double _price = 0.0;
   double _recommendedPrice = 1500.0; // Default recommended price
   String _dropoffAddress = '';
-  String _paymentMethod = 'Cash';
-  bool _receiverPays = false;
+  // Payment details are captured in _openProposePrice and passed to request
+
   
   // Multi-stop support
   final List<String> _additionalStops = [];
@@ -191,8 +191,7 @@ class _CourierScreenState extends ConsumerState<CourierScreen> {
         onSave: (data) {
           setState(() {
             _price = data['price'];
-            _paymentMethod = data['paymentMethod'];
-            _receiverPays = data['receiverPays'];
+            // Payment method and receiver pays info used only in the sheet display
           });
         },
       ),

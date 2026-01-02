@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 class SyncService {
   final LocalStorageService _localStorage;
   final ConnectivityService _connectivity;
+  // ignore: unused_field
   final DatabaseService _database;
 
   SyncService({

@@ -2,20 +2,11 @@
 // import 'package:mailer/mailer.dart';
 // import 'package:mailer/smtp_server.dart';
 import 'package:fast_delivery/core/models/ride_model.dart';
-import 'package:fast_delivery/core/services/receipt_service.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class EmailService {
-  // SMTP Configuration loaded from environment variables
-  String get _smtpHost => dotenv.env['SMTP_HOST'] ?? 'smtp.gmail.com';
-  int get _smtpPort => int.tryParse(dotenv.env['SMTP_PORT'] ?? '587') ?? 587;
-  String get _smtpUsername => dotenv.env['SMTP_USERNAME'] ?? '';
-  String get _smtpPassword => dotenv.env['SMTP_PASSWORD'] ?? '';
-  String get _senderName => dotenv.env['SENDER_NAME'] ?? 'Fast Delivery';
-  String get _senderEmail => dotenv.env['SENDER_EMAIL'] ?? 'noreply@fastdelivery.ng';
-
-  final ReceiptService _receiptService = ReceiptService();
+  // SMTP Configuration is handled by backend services
+  // This service provides a stub for web compatibility
 
   // Send receipt email
   Future<bool> sendReceiptEmail({
@@ -97,7 +88,5 @@ class EmailService {
     return true;
   }
 
-  String _buildEmailHtml(RideModel ride, String? recipientName) {
-    return 'HTML Content Placeholder';
-  }
+
 }

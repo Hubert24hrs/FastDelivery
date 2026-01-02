@@ -5,10 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() {
   group('DatabaseService Tests', () {
-    late DatabaseService databaseService;
 
     setUp(() {
-      databaseService = DatabaseService();
+      final _ = DatabaseService();
     });
 
     test('saveUser creates proper user document structure', () {

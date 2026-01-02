@@ -4,6 +4,7 @@ import 'package:fast_delivery/core/providers/providers.dart';
 import 'package:fast_delivery/core/theme/app_theme.dart';
 import 'package:fast_delivery/presentation/common/app_drawer.dart';
 import 'package:fast_delivery/presentation/common/background_orbs.dart';
+import 'package:fast_delivery/presentation/common/platform_map_widget.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -11,7 +12,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mapbox;
 
 class DriverDashboardScreen extends ConsumerStatefulWidget {
   const DriverDashboardScreen({super.key});
@@ -715,18 +715,10 @@ class _DriverDashboardScreenState extends ConsumerState<DriverDashboardScreen> {
       children: [
         // Full Screen Map with Padding for the left rail if we wanted... 
         // But Ref 2 usually shows full screen map. We'll do full screen.
-        mapbox.MapWidget(
-          key: ValueKey("request_map_${ride.id}"),
-          styleUri: mapbox.MapboxStyles.LIGHT, 
-          cameraOptions: mapbox.CameraOptions(
-            center: mapbox.Point(
-              coordinates: mapbox.Position(
-                ride.pickupLocation.longitude, 
-                ride.pickupLocation.latitude
-              )
-            ),
-            zoom: 14.5,
-          ),
+        PlatformMapWidget(
+          initialLat: ride.pickupLocation.latitude,
+          initialLng: ride.pickupLocation.longitude,
+          initialZoom: 14.5,
         ),
 
         // Floating Panel

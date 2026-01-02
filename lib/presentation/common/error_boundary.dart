@@ -25,6 +25,7 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
     // We don't override FlutterError.onError here as it's done globally in main.dart
   }
 
+// ignore: unused_element
   void _handleError(FlutterErrorDetails details) {
     setState(() {
       _error = details;
